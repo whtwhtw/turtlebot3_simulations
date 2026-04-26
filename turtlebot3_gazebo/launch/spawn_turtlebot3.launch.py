@@ -56,6 +56,8 @@ def generate_launch_description():
             '-z', '0.01'
         ],
         output='screen',
+        respawn=True,
+        respawn_delay=2,
     )
 
     bridge_params = os.path.join(
@@ -73,6 +75,8 @@ def generate_launch_description():
             f'config_file:={bridge_params}',
         ],
         output='screen',
+        respawn=True,
+        respawn_delay=1,
     )
 
     start_gazebo_ros_image_bridge_cmd = Node(
@@ -80,6 +84,8 @@ def generate_launch_description():
         executable='image_bridge',
         arguments=['/camera/image_raw'],
         output='screen',
+        respawn=True,
+        respawn_delay=1,
     )
     ld = LaunchDescription()
 
@@ -90,6 +96,16 @@ def generate_launch_description():
     # Add any conditioned actions
     ld.add_action(start_gazebo_ros_spawner_cmd)
     ld.add_action(start_gazebo_ros_bridge_cmd)
-    ld.add_action(start_gazebo_ros_image_bridge_cmd) if TURTLEBOT3_MODEL != 'burger' else None
+    
+    if TURTLEBOT3_MODEL != 'burger':
+        start_gazebo_ros_image_bridge_cmd = Node(
+            package='ros_gz_image',
+            executable='image_bridge',
+            arguments=['/camera/image_raw'],
+            output='screen',
+            respawn=True,
+            respawn_delay=1,
+        )
+        ld.add_action(start_gazebo_ros_image_bridge_cmd)
 
     return ld

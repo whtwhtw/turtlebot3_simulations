@@ -1,0 +1,22 @@
+{
+  "name": "TurtleBot3 Simulations",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "turtlebot3-sim",
+  "workspaceFolder": "/root/turtlebot3_ws",
+  "remoteUser": "root",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-iot.vscode-ros",
+        "ms-python.python",
+        "ms-vscode.cpptools"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "python.defaultInterpreterPath": "/usr/bin/python3"
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "shutdownAction": "stopContainer"
+}

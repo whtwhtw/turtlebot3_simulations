@@ -1,8 +1,8 @@
 # TurtleBot3
 <img src="https://raw.githubusercontent.com/ROBOTIS-GIT/emanual/master/assets/images/platform/turtlebot3/logo_turtlebot3.png" width="300">
 
-- Active Branches: noetic, humble, main
-- Legacy Branches: *-devel
+- Active Branches: noetic, jazzy, main
+- Legacy Branches: humble, *-devel
 
 ## Open Source Projects Related to TurtleBot3
 - [turtlebot3](https://github.com/ROBOTIS-GIT/turtlebot3)
@@ -38,3 +38,31 @@
 
 ### Community & Support
 - 💬 **[ROBOTIS Community Forum](https://forum.robotis.com/)** – Get help and discuss with other users
+
+## 🐳 Docker 快速启动（推荐）
+
+本项目已集成 Docker 容器化开发支持，参考 ROS2-start 项目架构。
+
+### 一键启动
+
+```bash
+# 1. 授权 X11 显示
+xhost +local:docker
+
+# 2. 启动容器并运行
+cd turtlebot3_simulations
+./turtlebot3_simulations.sh start
+./turtlebot3_simulations.sh build
+./turtlebot3_simulations.sh turtlebot3_world  # 启动仿真
+```
+
+### 完整文档
+
+- 📖 [启动方式说明](docs/启动方式说明.md) - 两种启动方式详解
+- 🐳 [Docker启动指南](docs/Docker启动指南.md) - 容器化开发完整指南
+- 🔧 [开发指南](docs/开发指南.md) - 代码开发与调试
+
+### VSCode 支持
+
+使用 [Dev Containers](.devcontainer/) 配置，一键进入集成开发环境：
+`Ctrl+Shift+P` → `Dev Containers: Reopen in Container`

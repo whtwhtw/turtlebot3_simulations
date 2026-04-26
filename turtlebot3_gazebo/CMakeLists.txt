@@ -93,6 +93,12 @@ install(DIRECTORY include/
   DESTINATION include/
 )
 
+install(PROGRAMS
+  launch/gazebo_reset_handler.py
+  scripts/respawn.sh
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ################################################################################
 # Macro for ament package
 ################################################################################

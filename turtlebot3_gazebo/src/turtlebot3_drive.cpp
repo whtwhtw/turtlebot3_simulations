@@ -29,6 +29,13 @@ Turtlebot3Drive::Turtlebot3Drive()
   scan_data_[0] = 0.0;
   scan_data_[1] = 0.0;
   scan_data_[2] = 0.0;
+  front_avg_dist_ = 3.5;  // range_max 初始值
+  left_avg_dist_ = 3.5;
+  right_avg_dist_ = 3.5;
+  front_inf_count_ = 0;
+  front_total_ = 0;
+  left_count_ = 0;
+  right_count_ = 0;
 
   robot_pose_ = 0.0;
   prev_robot_pose_ = 0.0;
@@ -93,6 +100,59 @@ void Turtlebot3Drive::scan_callback(const sensor_msgs::msg::LaserScan::SharedPtr
       scan_data_[num] = msg->ranges.at(scan_angle[num]);
     }
   }
+
+  // 计算前方扇形区域的平均距离
+  // 注意：angle_min=0, angle_max=2π，index 0 = 正前方
+  // 重置计数器
+  double front_sum = 0.0;
+  int front_count = 0;
+  int front_inf_count = 0;
+  left_avg_dist_ = 3.5;   // range_max 默认值
+  right_avg_dist_ = 3.5;
+  left_count_ = 0;
+  right_count_ = 0;
+
+  // 前方：-60° 到 +60°（由于 angle_min=0，对应 index 0~60 和末尾部分）
+  // 简化：取 index 0~60 和末尾 index (size-60)~(size-1)
+  size_t num_rays = msg->ranges.size();
+  for (size_t i = 0; i < num_rays; i++) {
+    double angle = msg->angle_min + i * msg->angle_increment;
+    // 归一化到 -π ~ +π
+    while (angle > M_PI) angle -= 2 * M_PI;
+    while (angle < -M_PI) angle += 2 * M_PI;
+
+    // 前方 -60° ~ +60°
+    if (std::abs(angle) <= 60.0 * DEG2RAD) {
+      if (std::isinf(msg->ranges[i])) {
+        front_inf_count++;
+      } else if (msg->ranges[i] > msg->range_min) {
+        front_sum += msg->ranges[i];
+        front_count++;
+      }
+    }
+
+    // 左侧 +60° ~ +120°
+    if (angle > 60.0 * DEG2RAD && angle <= 120.0 * DEG2RAD) {
+      if (!std::isinf(msg->ranges[i]) && msg->ranges[i] > msg->range_min) {
+        left_avg_dist_ += msg->ranges[i];
+        left_count_++;
+      }
+    }
+
+    // 右侧 -120° ~ -60°
+    if (angle < -60.0 * DEG2RAD && angle >= -120.0 * DEG2RAD) {
+      if (!std::isinf(msg->ranges[i]) && msg->ranges[i] > msg->range_min) {
+        right_avg_dist_ += msg->ranges[i];
+        right_count_++;
+      }
+    }
+  }
+
+  front_inf_count_ = front_inf_count;
+  front_total_ = front_count + front_inf_count;
+  front_avg_dist_ = (front_count > 0) ? (front_sum / front_count) : msg->range_max;
+  left_avg_dist_ = (left_count_ > 0) ? (left_avg_dist_ / left_count_) : msg->range_max;
+  right_avg_dist_ = (right_count_ > 0) ? (right_avg_dist_ / right_count_) : msg->range_max;
 }
 
 void Turtlebot3Drive::update_cmd_vel(double linear, double angular)
@@ -110,29 +170,56 @@ void Turtlebot3Drive::update_cmd_vel(double linear, double angular)
 void Turtlebot3Drive::update_callback()
 {
   static uint8_t turtlebot3_state_num = 0;
+  static int forward_count = 0;
   double escape_range = 30.0 * DEG2RAD;
-  double check_forward_dist = 0.7;
-  double check_side_dist = 0.6;
+  double check_forward_dist = 1.2;   // 前方安全距离
+  double check_side_dist = 1.0;      // 侧方安全距离
 
   switch (turtlebot3_state_num) {
-    case GET_TB3_DIRECTION:
-      if (scan_data_[CENTER] > check_forward_dist) {
-        if (scan_data_[LEFT] < check_side_dist) {
+    case GET_TB3_DIRECTION: {
+      // 计算前方 .inf 比例
+      double inf_ratio = (front_total_ > 0) ?
+        (static_cast<double>(front_inf_count_) / front_total_) : 0.0;
+
+      if (inf_ratio > 0.7) {
+        // 大部分射线检测不到障碍 → 前方开阔，但需要主动探索转向
+        forward_count++;
+        if (forward_count > 30) {
+          // 直行 30 次后主动转向探索
+          prev_robot_pose_ = robot_pose_;
+          if (left_avg_dist_ > right_avg_dist_) {
+            turtlebot3_state_num = TB3_LEFT_TURN;
+          } else {
+            turtlebot3_state_num = TB3_RIGHT_TURN;
+          }
+          forward_count = 0;
+        } else {
+          turtlebot3_state_num = TB3_DRIVE_FORWARD;
+        }
+      } else if (front_avg_dist_ > check_forward_dist) {
+        // 前方安全，检查侧方
+        forward_count = 0;
+        if (left_avg_dist_ < check_side_dist && left_count_ > 0) {
           prev_robot_pose_ = robot_pose_;
           turtlebot3_state_num = TB3_RIGHT_TURN;
-        } else if (scan_data_[RIGHT] < check_side_dist) {
+        } else if (right_avg_dist_ < check_side_dist && right_count_ > 0) {
           prev_robot_pose_ = robot_pose_;
           turtlebot3_state_num = TB3_LEFT_TURN;
         } else {
           turtlebot3_state_num = TB3_DRIVE_FORWARD;
         }
-      }
-
-      if (scan_data_[CENTER] < check_forward_dist) {
+      } else {
+        // 前方有障碍，转向
         prev_robot_pose_ = robot_pose_;
-        turtlebot3_state_num = TB3_RIGHT_TURN;
+        forward_count = 0;
+        if (left_avg_dist_ > right_avg_dist_) {
+          turtlebot3_state_num = TB3_LEFT_TURN;
+        } else {
+          turtlebot3_state_num = TB3_RIGHT_TURN;
+        }
       }
       break;
+    }
 
     case TB3_DRIVE_FORWARD:
       update_cmd_vel(LINEAR_VELOCITY, 0.0);
@@ -142,6 +229,7 @@ void Turtlebot3Drive::update_callback()
     case TB3_RIGHT_TURN:
       if (fabs(prev_robot_pose_ - robot_pose_) >= escape_range) {
         turtlebot3_state_num = GET_TB3_DIRECTION;
+        forward_count = 0;
       } else {
         update_cmd_vel(0.0, -1 * ANGULAR_VELOCITY);
       }
@@ -150,6 +238,7 @@ void Turtlebot3Drive::update_callback()
     case TB3_LEFT_TURN:
       if (fabs(prev_robot_pose_ - robot_pose_) >= escape_range) {
         turtlebot3_state_num = GET_TB3_DIRECTION;
+        forward_count = 0;
       } else {
         update_cmd_vel(0.0, ANGULAR_VELOCITY);
       }

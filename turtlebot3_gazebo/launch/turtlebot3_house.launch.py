@@ -24,6 +24,7 @@ from launch.actions import AppendEnvironmentVariable
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch_ros.actions import Node
 
 
 def generate_launch_description():
@@ -71,6 +72,19 @@ def generate_launch_description():
         }.items()
     )
 
+    # Gazebo reset handler - monitors for reset events and auto-respawns
+    gazebo_reset_handler_cmd = Node(
+        package='turtlebot3_gazebo',
+        executable='gazebo_reset_handler.py',
+        parameters=[
+            {'x_pose': x_pose},
+            {'y_pose': y_pose},
+        ],
+        output='screen',
+        respawn=True,
+        respawn_delay=1,
+    )
+
     set_env_vars_resources = AppendEnvironmentVariable(
             'GZ_SIM_RESOURCE_PATH',
             os.path.join(
@@ -82,8 +96,10 @@ def generate_launch_description():
     # Add the commands to the launch description
     ld.add_action(gzserver_cmd)
     ld.add_action(gzclient_cmd)
-    ld.add_action(spawn_turtlebot_cmd)
     ld.add_action(robot_state_publisher_cmd)
     ld.add_action(set_env_vars_resources)
+    # Spawn turtlebot with reset handler
+    ld.add_action(spawn_turtlebot_cmd)
+    ld.add_action(gazebo_reset_handler_cmd)
 
     return ld

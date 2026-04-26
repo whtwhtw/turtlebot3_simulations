@@ -1,0 +1,32 @@
+# Build artifacts
+turtlebot3_ws/build/
+turtlebot3_ws/install/
+turtlebot3_ws/log/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Qwen Code settings (keep output-language.md)
+.qwen/settings.json
+.qwen/settings.json.orig
+
+# Docker devcontainer (optional - remove if you want to share)
+# .devcontainer/
+
+# Large data files
+*.db
+*.bag
+*.db3
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo

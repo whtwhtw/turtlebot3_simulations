@@ -1,0 +1,18 @@
+version: '3.8'
+services:
+  turtlebot3-sim:
+    image: osrf/ros:jazzy-desktop-full
+    container_name: turtlebot3-sim
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - TURTLEBOT3_MODEL=burger
+      - ROS_DOMAIN_ID=0
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ..:/workspace
+      - ../turtlebot3_ws:/root/turtlebot3_ws
+    working_dir: /root/turtlebot3_ws
+    network_mode: host
+    command: tail -f /dev/null

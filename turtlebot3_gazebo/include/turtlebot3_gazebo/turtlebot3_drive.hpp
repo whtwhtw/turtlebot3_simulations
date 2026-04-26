@@ -57,6 +57,13 @@ private:
   double robot_pose_;
   double prev_robot_pose_;
   double scan_data_[3];
+  double front_avg_dist_;
+  double left_avg_dist_;
+  double right_avg_dist_;
+  int front_inf_count_;
+  int front_total_;
+  int left_count_;
+  int right_count_;
 
   // ROS timer
   rclcpp::TimerBase::SharedPtr update_timer_;
