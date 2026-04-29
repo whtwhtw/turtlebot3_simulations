@@ -27,6 +27,7 @@
 #include <tf2/LinearMath/Quaternion.hpp>
 #include "tf2_msgs/msg/tf_message.hpp"
 #include "turtlebot3_msgs/msg/sensor_state.hpp"
+#include "geometry_msgs/msg/twist_stamped.hpp"
 
 #define LEFT 0
 #define RIGHT 1
@@ -52,6 +53,8 @@ private:
 
   // ROS topic subscribers
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr cmd_vel_stamped_sub_;
+  bool enable_stamped_cmd_vel_;
 
 
   nav_msgs::msg::Odometry odom_;
@@ -73,6 +76,8 @@ private:
   void init_parameters();
   void init_variables();
   void command_velocity_callback(const geometry_msgs::msg::Twist::SharedPtr cmd_vel_msg);
+  void command_velocity_stamped_callback(
+    const geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel_msg);
   void update_callback();
   bool update_odometry(const rclcpp::Duration & diff_time);
   void update_joint_state();

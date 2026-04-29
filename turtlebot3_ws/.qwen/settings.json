@@ -1,7 +1,23 @@
 {
   "permissions": {
     "allow": [
-      "Read(//root/.qwen/**)"
+      "Read(//root/.qwen/**)",
+      "Read(//docs/**)",
+      "Bash(mkdir *)",
+      "Bash(colcon *)",
+      "Bash(source *)",
+      "Bash(ros2 *)",
+      "Bash(dpkg *)",
+      "Bash(apt-get *)",
+      "Bash(apt-cache *)",
+      "Bash(git clone *)",
+      "Bash(rosdep *)",
+      "Bash(cat *)",
+      "Bash(rm *)",
+      "Bash(curl *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(python3 *)"
     ]
   },
   "$version": 3

@@ -45,13 +45,31 @@ Turtlebot3Fake::Turtlebot3Fake()
   tf_pub_ = this->create_publisher<tf2_msgs::msg::TFMessage>("tf", qos);
 
   // Initialise subscribers
-  cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
-    "cmd_vel", \
-    qos, \
-    std::bind(
-      &Turtlebot3Fake::command_velocity_callback, \
-      this, \
-      std::placeholders::_1));
+  enable_stamped_cmd_vel_ = false;
+  this->declare_parameter<bool>("enable_stamped_cmd_vel", false);
+  this->get_parameter("enable_stamped_cmd_vel", enable_stamped_cmd_vel_);
+
+  if (enable_stamped_cmd_vel_) {
+    cmd_vel_sub_ = nullptr;
+    cmd_vel_stamped_sub_ = this->create_subscription<geometry_msgs::msg::TwistStamped>(
+      "cmd_vel", \
+      qos, \
+      std::bind(
+        &Turtlebot3Fake::command_velocity_stamped_callback, \
+        this, \
+        std::placeholders::_1));
+    RCLCPP_INFO(this->get_logger(), "Subscribing to cmd_vel as TwistStamped");
+  } else {
+    cmd_vel_stamped_sub_ = nullptr;
+    cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
+      "cmd_vel", \
+      qos, \
+      std::bind(
+        &Turtlebot3Fake::command_velocity_callback, \
+        this, \
+        std::placeholders::_1));
+    RCLCPP_INFO(this->get_logger(), "Subscribing to cmd_vel as Twist");
+  }
 
   /************************************************************
   ** initialise ROS timers
@@ -77,6 +95,7 @@ void Turtlebot3Fake::init_parameters()
   this->declare_parameter<std::string>("base_frame");
   this->declare_parameter<double>("wheels.separation");
   this->declare_parameter<double>("wheels.radius");
+  this->declare_parameter<bool>("enable_stamped_cmd_vel");
 
   // Get parameters from yaml
   this->get_parameter_or<std::string>(
@@ -139,6 +158,19 @@ void Turtlebot3Fake::command_velocity_callback(
 
   goal_linear_velocity_ = cmd_vel_msg->linear.x;
   goal_angular_velocity_ = cmd_vel_msg->angular.z;
+
+  wheel_speed_cmd_[LEFT] = goal_linear_velocity_ - (goal_angular_velocity_ * wheel_seperation_ / 2);
+  wheel_speed_cmd_[RIGHT] = goal_linear_velocity_ + \
+    (goal_angular_velocity_ * wheel_seperation_ / 2);
+}
+
+void Turtlebot3Fake::command_velocity_stamped_callback(
+  const geometry_msgs::msg::TwistStamped::SharedPtr cmd_vel_msg)
+{
+  last_cmd_vel_time_ = this->now();
+
+  goal_linear_velocity_ = cmd_vel_msg->twist.linear.x;
+  goal_angular_velocity_ = cmd_vel_msg->twist.angular.z;
 
   wheel_speed_cmd_[LEFT] = goal_linear_velocity_ - (goal_angular_velocity_ * wheel_seperation_ / 2);
   wheel_speed_cmd_[RIGHT] = goal_linear_velocity_ + \

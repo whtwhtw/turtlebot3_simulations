@@ -2,6 +2,7 @@
 turtlebot3_ws/build/
 turtlebot3_ws/install/
 turtlebot3_ws/log/
+turtlebot3_ws/.vscode/
 
 # IDE
 .vscode/
@@ -15,8 +16,8 @@ turtlebot3_ws/log/
 Thumbs.db
 
 # Qwen Code settings (keep output-language.md)
-.qwen/settings.json
-.qwen/settings.json.orig
+# .qwen/settings.json
+# .qwen/settings.json.orig
 
 # Docker devcontainer (optional - remove if you want to share)
 # .devcontainer/

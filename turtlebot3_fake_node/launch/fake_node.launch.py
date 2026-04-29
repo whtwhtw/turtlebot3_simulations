@@ -23,6 +23,8 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
+from launch.substitutions import PythonExpression
+from launch.conditions import IfCondition
 from launch_ros.actions import Node
 
 
@@ -30,9 +32,13 @@ def generate_launch_description():
     # Get package directories
     fake_node_share = get_package_share_directory('turtlebot3_fake_node')
     gazebo_share = get_package_share_directory('turtlebot3_gazebo')
-    
+
     # Environment variable for robot model
     turtlebot3_model = os.environ.get('TURTLEBOT3_MODEL', 'burger')
+
+    # ROS distribution
+    ros_distro = os.environ.get('ROS_DISTRO', 'humble').lower()
+    enable_stamped = ros_distro != 'humble'
     
     # Launch configurations
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
@@ -66,7 +72,10 @@ def generate_launch_description():
             package='turtlebot3_fake_node',
             executable='turtlebot3_fake_node',
             name='turtlebot3_fake_node',
-            parameters=[param_dir],
+            parameters=[
+                param_dir,
+                {'enable_stamped_cmd_vel': enable_stamped}
+            ],
             output='screen',
             remappings=[
                 ('cmd_vel', '/cmd_vel'),

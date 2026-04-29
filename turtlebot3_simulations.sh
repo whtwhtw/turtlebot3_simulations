@@ -33,11 +33,13 @@ start_container() {
             --name $CONTAINER_NAME \
             --privileged \
             --gpus all \
+            --runtime=nvidia \
             -e DISPLAY=$DISPLAY \
             -e QT_X11_NO_MITSHM=1 \
             -e TURTLEBOT3_MODEL=${TURTLEBOT3_MODEL:-burger} \
             -e ROS_DOMAIN_ID=0 \
             -e NVIDIA_DRIVER_CAPABILITIES=all \
+            -e NVIDIA_VISIBLE_DEVICES=all \
             -v /tmp/.X11-unix:/tmp/.X11-unix \
             -v $PROJECT_DIR:/workspace \
             -v $PROJECT_DIR/turtlebot3_ws:/root/turtlebot3_ws \
@@ -60,7 +62,11 @@ remove_container() {
 
 shell() {
     log_info "进入容器 $CONTAINER_NAME 的bash..."
-    docker exec -it $CONTAINER_NAME bash
+    docker exec -it $CONTAINER_NAME bash -c "
+        source /opt/ros/jazzy/setup.bash &&
+        cd /root/turtlebot3_ws &&
+        exec bash
+    "
 }
 
 build() {
@@ -73,9 +79,18 @@ build() {
         rm -f /root/turtlebot3_ws/src/turtlebot3_simulations &&
         rm -f /root/turtlebot3_ws/src/turtlebot3_fake_node &&
         rm -f /root/turtlebot3_ws/src/turtlebot3_gazebo &&
+        rm -f /root/turtlebot3_ws/src/slam_toolbox &&
+        rm -f /root/turtlebot3_ws/src/turtlebot3_dqn &&
         ln -sf /workspace/turtlebot3_fake_node /root/turtlebot3_ws/src/turtlebot3_fake_node &&
         ln -sf /workspace/turtlebot3_gazebo /root/turtlebot3_ws/src/turtlebot3_gazebo &&
-        colcon build --symlink-install
+        ln -sf /workspace/slam_toolbox /root/turtlebot3_ws/src/slam_toolbox &&
+        ln -sf /workspace/turtlebot3_machine_learning/turtlebot3_dqn /root/turtlebot3_ws/src/turtlebot3_dqn &&
+        colcon build --symlink-install &&
+        # 检查 DQN 依赖
+        if ! python3 -c 'import tensorflow' 2>/dev/null; then
+            echo '[WARN] TensorFlow 未安装，DQN 训练功能不可用'
+            echo '[WARN] 执行以下命令安装: docker exec turtlebot3-sim bash /workspace/turtlebot3_machine_learning/install_dqn_deps.sh'
+        fi
     "
 }
 
@@ -165,6 +180,117 @@ save_map() {
     "
 }
 
+# DQN 强化学习训练
+launch_dqn_train() {
+    local stage=$1
+    log_info "启动 DQN 训练: Stage ${stage} (GPU 加速)..."
+    docker exec -it $CONTAINER_NAME bash -c "
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE}
+        [ -f install/setup.bash ] && source install/setup.bash
+        ros2 launch turtlebot3_gazebo turtlebot3_dqn_stage${stage}.launch.py &
+        sleep 3
+        ros2 run turtlebot3_dqn dqn_gazebo ${stage} &
+        sleep 2
+        ros2 run turtlebot3_dqn dqn_environment &
+        sleep 2
+        ros2 run turtlebot3_dqn dqn_agent --ros-args \
+            -p max_training_episodes:=1000 \
+            -p use_gpu:=true
+    "
+}
+
+# DQN 训练（后台运行，不阻塞终端）
+launch_dqn_train_bg() {
+    local stage=$1
+    log_info "后台启动 DQN 训练: Stage ${stage} (GPU 加速)..."
+    docker exec $CONTAINER_NAME bash -c "
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE}
+        [ -f install/setup.bash ] && source install/setup.bash
+        ros2 launch turtlebot3_gazebo turtlebot3_dqn_stage${stage}.launch.py &
+        sleep 3
+        ros2 run turtlebot3_dqn dqn_gazebo ${stage} &
+        sleep 2
+        ros2 run turtlebot3_dqn dqn_environment &
+        sleep 2
+        ros2 run turtlebot3_dqn dqn_agent --ros-args \
+            -p max_training_episodes:=1000 \
+            -p use_gpu:=true &
+        echo 'DQN Stage ${stage} training started in background (GPU enabled)'
+        echo 'Use: docker exec turtlebot3-sim ros2 node list 查看节点'
+    "
+}
+
+# DQN 模型测试
+launch_dqn_test() {
+    local model_file=$1
+    if [ -z "$model_file" ]; then
+        log_error "请指定模型文件路径 (相对于 saved_model 目录)"
+        echo "示例: $0 dqn_test model1.h5"
+        return 1
+    fi
+    log_info "启动 DQN 测试，使用模型: ${model_file}..."
+    docker exec -it $CONTAINER_NAME bash -c "
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE}
+        [ -f install/setup.bash ] && source install/setup.bash
+        ros2 launch turtlebot3_gazebo turtlebot3_dqn_stage1.launch.py &
+        sleep 3
+        ros2 run turtlebot3_dqn dqn_gazebo 1 &
+        sleep 2
+        ros2 run turtlebot3_dqn dqn_environment &
+        sleep 2
+        ros2 run turtlebot3_dqn dqn_test --ros-args -p model_file:=${model_file}
+    "
+}
+
+# DQN 动作可视化
+launch_dqn_action_graph() {
+    log_info "启动 DQN 动作可视化 (需要 X11 转发)..."
+    docker exec -it $CONTAINER_NAME bash -c "
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE}
+        [ -f install/setup.bash ] && source install/setup.bash
+        ros2 run turtlebot3_dqn action_graph
+    "
+}
+
+# 安装 DQN 依赖
+install_dqn_deps() {
+    log_info "安装 DQN 训练依赖 (TensorFlow + PyQt5)..."
+    docker exec -it $CONTAINER_NAME bash /workspace/turtlebot3_machine_learning/install_dqn_deps.sh
+}
+
+# 验证 GPU 可用性
+check_gpu() {
+    log_info "检查 GPU 配置..."
+    echo ""
+    echo "=== 宿主机 GPU ==="
+    nvidia-smi 2>/dev/null || echo "❌ nvidia-smi 不可用"
+    echo ""
+    echo "=== 容器内 GPU ==="
+    docker exec $CONTAINER_NAME bash -c "
+        source /opt/ros/jazzy/setup.bash
+        cd ${WORKSPACE}
+        [ -f install/setup.bash ] && source install/setup.bash
+        echo '--- NVIDIA Container ---'
+        nvidia-smi 2>/dev/null || echo '❌ nvidia-smi 不可用'
+        echo ''
+        echo '--- TensorFlow GPU ---'
+        python3 -c \"
+import tensorflow as tf
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    print(f'✅ 发现 {len(gpus)} 个 GPU:')
+    for gpu in gpus:
+        print(f'   - {gpu}')
+else:
+    print('❌ TensorFlow 未发现 GPU')
+\"
+    "
+}
+
 # 切换机器人模型
 set_model() {
     local model=$1
@@ -214,7 +340,14 @@ TurtleBot3 Simulations 管理脚本
   turtlebot3_world   启动 World 场景（有障碍物）
   turtlebot3_house   启动 House 室内场景
   fake_node          启动 Fake Node (RViz only, 无需 Gazebo)
-  dqn_stage1~4       启动 DQN 强化学习场景 (阶段 1-4)
+  dqn_stage1~4       启动 DQN 强化学习场景 (阶段 1-4，仅 Gazebo)
+
+DQN 强化学习训练:
+  dqn_train_1~4      启动 DQN 训练 (Stage 1-4，完整训练流程)
+  dqn_train_bg_1~4   后台启动 DQN 训练 (不阻塞终端)
+  dqn_test <model>   使用训练好的模型进行测试 (例: dqn_test model1.h5)
+  dqn_action_graph   启动 DQN 动作可视化界面 (需要 X11)
+  dqn_install_deps   安装 DQN 训练依赖 (TensorFlow + PyQt5)
 
 SLAM 建图:
   slam_cartographer  启动 Cartographer SLAM 建图 + RViz
@@ -274,7 +407,25 @@ case "$1" in
         launch_fake
         ;;
     dqn_stage1|dqn_stage2|dqn_stage3|dqn_stage4)
+        # 保持兼容：原来只启动 Gazebo 场景
         launch_gazebo "$1"
+        ;;
+    dqn_train_1|dqn_train_2|dqn_train_3|dqn_train_4)
+        stage_num=${1##*_}
+        launch_dqn_train "$stage_num"
+        ;;
+    dqn_train_bg_1|dqn_train_bg_2|dqn_train_bg_3|dqn_train_bg_4)
+        stage_num=${1##*_}
+        launch_dqn_train_bg "$stage_num"
+        ;;
+    dqn_test)
+        launch_dqn_test "$2"
+        ;;
+    dqn_action_graph)
+        launch_dqn_action_graph
+        ;;
+    dqn_install_deps)
+        install_dqn_deps
         ;;
     rviz)
         launch_rviz

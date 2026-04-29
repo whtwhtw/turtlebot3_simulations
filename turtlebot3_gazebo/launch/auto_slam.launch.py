@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Auto SLAM: Cartographer + turtlebot3_drive (no keyboard needed)."""
+"""Auto SLAM: slam_toolbox + turtlebot3_drive (no keyboard needed)."""
 
 import os
 
@@ -10,13 +10,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
-    turtlebot3_cartographer = get_package_share_directory('turtlebot3_cartographer')
+    turtlebot3_slam_toolbox = get_package_share_directory('turtlebot3_slam_toolbox')
     turtlebot3_gazebo = get_package_share_directory('turtlebot3_gazebo')
 
-    # 1. 启动 Cartographer SLAM（不启动 RViz，避免重复打开）
-    cartographer = IncludeLaunchDescription(
+    # 1. 启动 slam_toolbox SLAM（不启动 RViz，避免重复打开）
+    slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(turtlebot3_cartographer, 'launch', 'cartographer.launch.py')
+            os.path.join(turtlebot3_slam_toolbox, 'launch', 'slam_toolbox.launch.py')
         ),
         launch_arguments={
             'use_sim_time': 'true',
@@ -40,6 +40,6 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        cartographer,
+        slam,
         auto_drive,
     ])

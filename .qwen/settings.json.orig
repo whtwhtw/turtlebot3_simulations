@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//media/wht/N/ROS2/ROS2-start-2/.devcontainer/**)"
+    ]
+  }
+}

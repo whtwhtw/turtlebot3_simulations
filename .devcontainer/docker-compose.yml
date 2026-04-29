@@ -4,11 +4,21 @@ services:
     image: osrf/ros:jazzy-desktop-full
     container_name: turtlebot3-sim
     privileged: true
+    runtime: nvidia
     environment:
       - DISPLAY=${DISPLAY}
       - QT_X11_NO_MITSHM=1
       - TURTLEBOT3_MODEL=burger
       - ROS_DOMAIN_ID=0
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ..:/workspace
