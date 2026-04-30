@@ -558,9 +558,15 @@ git clone https://github.com/ROBOTIS-GIT/hls_lfcd_lds_driver.git
 
 ### `.devcontainer/devcontainer.json`
 
-- 预装 VSCode 扩展：`ms-iot.vscode-ros`, `ms-python.python`
+- 预装 VSCode 扩展：
+  - `ms-python.python`, `ms-python.vscode-pylance` (Python 开发)
+  - `ms-vscode.cpptools` (C++ 开发)
+  - `redhat.vscode-yaml`, `redhat.vscode-xml` (ROS2 launch/参数文件)
+  - `qwenlm.qwen-code-vscode-ide-companion`, `tencent-cloud.coding-copilot` (AI 助手)
 - `postCreateCommand`: 自动执行环境初始化脚本
 - `shutdownAction: stopContainer`: 关闭 VSCode 时停止容器（非删除）
+
+> **注意**: 原 `ms-iot.vscode-ros` 扩展已于 2025-09 被归档废弃，已替换为上述扩展组合。
 
 ### `.devcontainer/post-create.sh`
 

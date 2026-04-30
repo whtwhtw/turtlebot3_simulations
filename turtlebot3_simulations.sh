@@ -25,6 +25,9 @@ start_container() {
             log_info "启动容器 $CONTAINER_NAME..."
             xhost +local:docker 2>/dev/null || true
             docker start $CONTAINER_NAME
+            # 等待容器完全启动
+            sleep 2
+            setup_devcontainer_support
         fi
     else
         log_info "创建并启动容器 $CONTAINER_NAME..."
@@ -47,7 +50,64 @@ start_container() {
             --network host \
             $IMAGE_NAME \
             tail -f /dev/null
+        
+        # 等待容器完全启动
+        sleep 3
+        setup_devcontainer_support
     fi
+}
+
+# 为脚本创建的容器添加 Dev Container 支持
+setup_devcontainer_support() {
+    log_info "配置 Dev Container 支持..."
+    
+    # 1. 创建 .devcontainer 标记文件，让 VS Code 能识别
+    docker exec $CONTAINER_NAME bash -c "
+        mkdir -p /root/.vscode-server /root/.vscode-server/bin
+        # 创建 devcontainer.json 标记
+        mkdir -p /workspace/.devcontainer
+        if [ ! -f /workspace/.devcontainer/devcontainer.json ]; then
+            cp /workspace/.devcontainer/devcontainer.json.example /workspace/.devcontainer/devcontainer.json 2>/dev/null || true
+        fi
+    "
+    
+    # 2. 安装 VS Code Server（如果尚未安装）
+    local vscode_installed
+    vscode_installed=$(docker exec $CONTAINER_NAME bash -c "
+        [ -f /root/.vscode-server/bin/code-server ] && echo 'yes' || echo 'no'
+    " 2>/dev/null)
+    
+    if [ "$vscode_installed" = "no" ]; then
+        log_info "安装 VS Code Server..."
+        # 获取 VS Code 最新版本
+        local vscode_version
+        vscode_version=$(curl -s https://api.github.com/repos/microsoft/vscode/releases/latest | grep '"tag_name"' | sed -E 's/.*"([^"]+)".*/\1/')
+        
+        if [ -n "$vscode_version" ]; then
+            docker exec $CONTAINER_NAME bash -c "
+                # 下载并安装 VS Code Server
+                cd /root/.vscode-server
+                curl -sL "https://update.code.visualstudio.com/${vscode_version#v}/server-linux-x64/stable" -o vscode-server.tar.gz
+                tar -xf vscode-server.tar.gz --strip-components=1
+                rm vscode-server.tar.gz
+                # 创建启动脚本
+                cat > /root/.vscode-server/bin/code-server << 'EOF'
+#!/bin/bash
+exec /root/.vscode-server/node /root/.vscode-server/out/server-main.js \"\$@\"
+EOF
+                chmod +x /root/.vscode-server/bin/code-server
+                echo 'VS Code Server 安装完成'
+            "
+        else
+            log_warn "无法获取 VS Code 最新版本，跳过安装"
+            log_warn "你仍然可以通过 Dev Container 扩展重新打开项目来安装"
+        fi
+    else
+        log_info "VS Code Server 已安装"
+    fi
+    
+    log_info "Dev Container 支持配置完成"
+    log_info "现在可以在 VS Code 中使用 'Dev Containers: Attach to Running Container' 连接到此容器"
 }
 
 stop_container() {
@@ -329,10 +389,11 @@ TurtleBot3 Simulations 管理脚本
 用法: $0 <命令> [参数]
 
 容器管理:
-  start              启动/创建 Docker 容器
+  start              启动/创建 Docker 容器（支持 Dev Container）
   stop               停止容器
   rm                 删除容器
   shell              进入容器 Bash
+  vscode             在 VS Code 中打开容器（推荐）
 
 构建与运行:
   build              编译项目 (colcon build)
@@ -390,6 +451,22 @@ case "$1" in
         ;;
     shell|sh)
         shell
+        ;;
+    vscode|code)
+        if command -v code &> /dev/null; then
+            log_info "在 VS Code 中打开容器 $CONTAINER_NAME..."
+            # 检查 VS Code 是否支持 Dev Containers
+            code --folder-uri "vscode-remote://attached-container+$(echo -n $CONTAINER_NAME | xxd -p)" /workspace 2>/dev/null &
+            log_info "VS Code 正在启动..."
+        else
+            log_info "请在 VS Code 中执行以下步骤："
+            log_info "1. 按 Ctrl+Shift+P (或 Cmd+Shift+P on Mac)"
+            log_info "2. 输入并选择: 'Dev Containers: Attach to Running Container'"
+            log_info "3. 选择容器: $CONTAINER_NAME"
+            log_info ""
+            log_info "提示: 安装 'code' 命令到 PATH 可以自动打开 VS Code"
+            log_info "  https://code.visualstudio.com/docs/setup/setup-overview"
+        fi
         ;;
     build)
         build

@@ -7,13 +7,26 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "ms-iot.vscode-ros",
         "ms-python.python",
-        "ms-vscode.cpptools"
+        "ms-python.vscode-pylance",
+        "ms-vscode.cpptools",
+        "redhat.vscode-yaml",
+        "redhat.vscode-xml",
+        "qwenlm.qwen-code-vscode-ide-companion",
+        "tencent-cloud.coding-copilot",
+        "Alibaba-Cloud.tongyi-lingma"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
-        "python.defaultInterpreterPath": "/usr/bin/python3"
+        "python.defaultInterpreterPath": "/usr/bin/python3",
+        "qwen-code.provider": "coding-plan",
+        "qwen-code.codingPlanRegion": "china",
+        "qwen-code.dotIndicator": true,
+        "qwen-code.notifications": true,
+        "codingcopilot.autoRun": false,
+        "codingcopilot.enableInlineChat": true,
+        "codingcopilot.enableAutoCompletions": true,
+        "codingcopilot.commitMessageLanguage": "zh_CN"
       }
     }
   },
