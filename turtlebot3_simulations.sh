@@ -186,10 +186,16 @@ launch_rviz() {
     exec_in_container "ros2 run rviz2 rviz2 -d \$ROS_DISTRO/share/turtlebot3_gazebo/rviz/tb3_gazebo.rviz"
 }
 
-# 键盘控制
+# 键盘控制（原版 turtlebot3_teleop，WASD 布局）
 launch_teleop() {
-    log_info "启动键盘控制..."
-    exec_in_container "ros2 run turtlebot3_teleop teleop_keyboard"
+    log_info "启动键盘控制 (turtlebot3_teleop, WASD 布局)..."
+    exec_in_container "ros2 run turtlebot3_teleop teleop_keyboard --ros-args -p stamped:=True"
+}
+
+# 键盘控制（teleop_twist_keyboard，小键盘布局，发布 TwistStamped 类型）
+launch_teleop_twist() {
+    log_info "启动键盘控制 (teleop_twist_keyboard, uio/jkl 布局, TwistStamped 类型)..."
+    exec_in_container "ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=True"
 }
 
 # 重新生成小车
@@ -419,7 +425,8 @@ SLAM 建图:
 辅助工具:
   rviz               启动 RViz2 可视化
   gazebo             启动 Gazebo 客户端
-  teleop             启动键盘控制节点
+  teleop             启动键盘控制节点 (turtlebot3_teleop, WASD 布局)
+  teleop_twist       启动键盘控制节点 (teleop_twist_keyboard, TwistStamped 类型)
   respawn            重新生成小车 (Gazebo reset 后使用)
   turtlebot3_drive   启动自动避障演示
 
@@ -513,6 +520,9 @@ case "$1" in
         ;;
     teleop)
         launch_teleop
+        ;;
+    teleop_twist)
+        launch_teleop_twist
         ;;
     respawn)
         respawn_robot

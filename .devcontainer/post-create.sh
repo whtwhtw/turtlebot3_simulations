@@ -23,7 +23,15 @@ deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu noble-backports main restricted 
 deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu noble-security main restricted universe multiverse
 SOURCES
 
-# 3. apt-get 更新（绕过代理）
+# 3. 添加 ROS 2 Jazzy 源
+echo ">>> 添加 ROS 2 源..."
+sudo apt-get install -y -o Acquire::http::Proxy=false -o Acquire::https::Proxy=false \
+    software-properties-common
+sudo add-apt-repository -y universe
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] https://mirrors.tuna.tsinghua.edu.cn/ros2/ubuntu noble main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# 4. apt-get 更新（绕过代理）
 echo ">>> 更新 apt 缓存..."
 sudo apt-get update -o Acquire::http::Proxy=false -o Acquire::https::Proxy=false
 

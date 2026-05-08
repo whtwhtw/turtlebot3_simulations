@@ -464,8 +464,9 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 
 ```bash
 ./turtlebot3_simulations.sh rviz               # 启动 RViz2 可视化
-./turtlebot3_simulations.sh teleop             # 键盘控制节点（WASD / 箭头键）
-./turtlebot3_simulations.sh respawn            # 重新生成小车（Gazebo reset 后使用）
+./turtlebot3_simulations.sh teleop             # 键盘控制节点 (turtlebot3_teleop, WASD 布局)
+./turtlebot3_simulations.sh teleop_twist       # 键盘控制节点 (teleop_twist_keyboard, TwistStamped 类型)
+./turtlebot3_simulations.sh respawn            # 重新生成小车 (Gazebo reset 后使用)
 ./turtlebot3_simulations.sh turtlebot3_drive   # 自动避障演示
 ```
 
@@ -474,11 +475,14 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 | 命令 | 功能描述 | 依赖节点/包 | 使用场景 | 注意事项 |
 |------|----------|------------|----------|----------|
 | `rviz` | 启动 RViz2 可视化工具，加载预配置的 RViz 布局文件，显示机器人状态、传感器数据、地图等 | `rviz2`（ROS2 可视化工具）<br>`turtlebot3_gazebo`（RViz 配置文件） | • 实时查看 LaserScan 点云数据 | • 观察 TF 坐标变换树 | • 监控地图构建进度 | • 调试导航路径规划 | 需先启动仿真或建图节点，否则 RViz 无数据可显示 |
-| `teleop` | 启动键盘控制节点，将 `WASD` 和箭头键转换为 `/cmd_vel` 速度指令发送给机器人 | `turtlebot3_teleop`（键盘控制包） | • 手动控制小车移动 | • 建图时人工探索环境 | • 测试控制响应 | **需在新终端中运行**，焦点需在终端窗口内；速度指令频率约 10Hz |
+| `teleop` | 启动键盘控制节点（`turtlebot3_teleop`），将 `WASD` 和箭头键转换为 `/cmd_vel` **Twist** 速度指令发送给机器人 | `turtlebot3_teleop`（TurtleBot3 官方包） | • 手动控制小车移动 | • 建图时人工探索环境 | • 测试控制响应 | **需在新终端中运行**，焦点需在终端窗口内；发布 `Twist` 类型，兼容大多数节点 |
+| `teleop_twist` | 启动键盘控制节点（`teleop_twist_keyboard`），将键盘输入转换为 `/cmd_vel` **TwistStamped** 速度指令。使用小键盘 `u/i/o/j/k/l` 布局 | `teleop_twist_keyboard`（ROS2 Jazzy 自带） | • 手动控制小车移动 | • 建图时人工探索环境 | • 与 `ros_gz_bridge` 等需要 `TwistStamped` 的节点配合 | **需在新终端中运行**；发布 `TwistStamped` 类型；如其他节点使用 `Twist`，可加参数 `-p stamped:=False` |
 | `respawn` | 在 Gazebo reset 或小车卡住后，重新生成小车到初始位置（默认坐标：x=-2.0, y=-0.5） | `turtlebot3_gazebo/spawn_turtlebot3.launch.py` | • Gazebo 重置后恢复小车位置 | • 小车陷入障碍物 | • 测试重新开始 | 会杀掉当前 teleop 进程，需重新启动键盘控制 |
 | `turtlebot3_drive` | 启动自动避障演示节点，小车基于 LaserScan 数据自主移动，检测到障碍物时自动转向 | `turtlebot3_node/turtlebot3_drive`（自动避障节点） | • 演示自主导航能力 | • 无需键盘控制的自动探索 | • 验证传感器数据 | 避障策略较简单，仅基于距离阈值，复杂环境可能碰撞 |
 
 **键盘控制键位说明：**
+
+`teleop`（turtlebot3_teleop，WASD 布局）：
 
 ```
         W
@@ -487,6 +491,26 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 
 W/A/S/D : 前进/左转/后退/右转
 X        : 停止运动
+其他键   : 退出控制节点
+```
+
+`teleop_twist`（teleop_twist_keyboard，小键盘布局）：
+
+```
+   u    i    o
+   j    k    l
+   m    ,    .
+
+I        : 前进
+J        : 左转
+L        : 右转
+,        : 后退
+K        : 停止运动
+
+t/b      : 上升/下降（z 轴）
+q/z      : 增加/减少最大速度
+w/x      : 仅增加/减少线速度
+e/c      : 仅增加/减少角速度
 其他键   : 退出控制节点
 ```
 
