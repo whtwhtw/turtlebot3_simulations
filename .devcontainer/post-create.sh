@@ -1,28 +1,49 @@
 #!/bin/bash
 set -e
 
+ROS_DISTRO="jazzy"
+
 echo "=== TurtleBot3 Simulations 环境初始化 ==="
 
-# 更新系统包
-sudo apt-get update
+# ---- apt 源配置 ----
+# 修复 NOSPLIT 错误：容器使用 host 网络时，某些代理/防火墙会干扰 HTTPS
+# 解决思路：完全替换为清华 HTTPS 镜像源，并清理导致冲突的内置源
+
+# 1. 清理所有内置的 Ubuntu 和 ROS 源
+#    Ubuntu 24.04 使用 DEB822 格式 (.sources)，不是传统的 .list
+sudo rm -f /etc/apt/sources.list.d/ros*.sources /etc/apt/sources.list.d/ros*.list 2>/dev/null || true
+sudo rm -f /etc/apt/sources.list.d/ubuntu.sources 2>/dev/null || true
+
+# 2. 备份并完全替换 sources.list 为清华镜像
+sudo cp /etc/apt/sources.list /etc/apt/sources.list.bak 2>/dev/null || true
+cat <<'SOURCES' | sudo tee /etc/apt/sources.list > /dev/null
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu noble main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu noble-updates main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu noble-backports main restricted universe multiverse
+deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu noble-security main restricted universe multiverse
+SOURCES
+
+# 3. apt-get 更新（绕过代理）
+echo ">>> 更新 apt 缓存..."
+sudo apt-get update -o Acquire::http::Proxy=false -o Acquire::https::Proxy=false
 
 # 安装常用开发工具
-sudo apt-get install -y \
+sudo apt-get install -y -o Acquire::http::Proxy=false -o Acquire::https::Proxy=false \
     gdb \
     vim \
     curl \
     git \
     python3-pip \
-    ros-humble-ros-gz-sim \
-    ros-humble-ros-gz-bridge \
-    ros-humble-ros-gz-image
+    ros-${ROS_DISTRO}-ros-gz-sim \
+    ros-${ROS_DISTRO}-ros-gz-bridge \
+    ros-${ROS_DISTRO}-ros-gz-image
 
 # 安装 Python 扩展
-pip3 install --user colcon-common-extensions
+pip3 install --user --break-system-packages colcon-common-extensions
 
 # 配置 ROS2 环境
-if ! grep -q "source /opt/ros/humble/setup.bash" ~/.bashrc; then
-    echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+if ! grep -q "source /opt/ros/${ROS_DISTRO}/setup.bash" ~/.bashrc; then
+    echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
 fi
 
 if ! grep -q "TURTLEBOT3_MODEL" ~/.bashrc; then
@@ -39,7 +60,7 @@ fi
 
 # 编译项目
 cd /root/turtlebot3_ws
-source /opt/ros/humble/setup.bash
+source /opt/ros/${ROS_DISTRO}/setup.bash
 colcon build --symlink-install 2>&1 | tail -20
 
 echo "=== 初始化完成 ==="
