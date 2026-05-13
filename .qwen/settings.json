@@ -52,15 +52,9 @@
       "Bash(wget *)",
       "Bash(ls *)",
       "Bash(apt-cache *)",
-      "Bash(git config *)",
-      "Bash(git *)",
-      "Bash(stat *)",
-      "Bash(which *)",
-      "WebFetch(qwenlm.github.io)",
-      "WebFetch(claudemarketplaces.com)",
-      "WebFetch(skills.sh)",
-      "Bash(ros2 *)",
-      "Bash(ssh *)"
+      "Bash(git stash)",
+      "Bash(git pull)",
+      "Bash(git stash *)"
     ]
   },
   "$version": 4
