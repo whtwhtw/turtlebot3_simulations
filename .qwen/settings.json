@@ -59,8 +59,9 @@
       "WebFetch(qwenlm.github.io)",
       "WebFetch(claudemarketplaces.com)",
       "WebFetch(skills.sh)",
-      "Bash(ros2 *)"
+      "Bash(ros2 *)",
+      "Bash(ssh *)"
     ]
   },
-  "$version": 3
+  "$version": 4
 }

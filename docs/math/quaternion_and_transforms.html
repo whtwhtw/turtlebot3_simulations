@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>四元数与三维变换 — SLAM 中的旋转与变换表示</title>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card-bg: #1a1d27;
+            --text: #e0e0e0;
+            --accent: #64b5f6;
+            --accent2: #81c784;
+            --accent3: #ffb74d;
+            --border: #2c2f3a;
+            --code-bg: #12141c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            padding: 2rem;
+        }
+        .container { max-width: 960px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 0.5rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin: 2.5rem 0 1rem;
+            padding-left: 0.75rem;
+            border-left: 4px solid var(--accent);
+        }
+        h3 {
+            font-size: 1.2rem;
+            color: var(--accent2);
+            margin: 1.5rem 0 0.75rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .def {
+            border-left: 4px solid var(--accent2);
+            background: #1a2320;
+        }
+        .formula {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        .note {
+            background: #2a2218;
+            border-left: 4px solid var(--accent3);
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .note::before { content: "💡 "; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: var(--code-bg);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 0.7rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        th { background: #222533; color: var(--accent); }
+        .hierarchy {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1.5rem;
+            margin: 1.5rem 0;
+            flex-wrap: wrap;
+        }
+        .hierarchy .box {
+            background: var(--code-bg);
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            text-align: center;
+            min-width: 120px;
+        }
+        .hierarchy .arrow { color: var(--accent); font-size: 1.5rem; }
+        code {
+            background: var(--code-bg);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        mjx-container { color: #f5f5f5 !important; }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>四元数与三维空间变换</h1>
+<p class="subtitle">SLAM 中的旋转表示：四元数 ↔ 旋转向量 ↔ 旋转矩阵，以及相似 / 仿射 / 摄影变换的层次关系</p>
+
+<!-- ==================== 1. 四元数基础 ==================== -->
+<h2>1. 四元数（Quaternion）基础</h2>
+
+<div class="card def">
+    <h3>1.1 定义</h3>
+    <p>四元数是复数的扩展，由一个实部和三个虚部组成，记为：</p>
+    <div class="formula">
+        $$q = q_0 + q_1 i + q_2 j + q_3 k \in \mathbb{H}$$
+    </div>
+    <p>其中 $i, j, k$ 满足 Hamilton 关系：</p>
+    <div class="formula">
+        $$i^2 = j^2 = k^2 = ijk = -1$$
+        $$ij = k,\quad jk = i,\quad ki = j$$
+        $$ji = -k,\quad kj = -i,\quad ik = -j$$
+    </div>
+    <p>四元数也可写为标量-向量对的形式：</p>
+    <div class="formula">
+        $$q = (s, \mathbf{v}), \quad s = q_0 \in \mathbb{R},\;\; \mathbf{v} = (q_1, q_2, q_3)^\top \in \mathbb{R}^3$$
+    </div>
+</div>
+
+<div class="card def">
+    <h3>1.2 基本运算</h3>
+    <p><strong>加法：</strong></p>
+    <div class="formula">$$q + p = (q_0+p_0,\; q_1+p_1,\; q_2+p_2,\; q_3+p_3)$$</div>
+
+    <p><strong>乘法（Hamilton 积）：</strong></p>
+    <div class="formula">
+        $$qp = (s_q s_p - \mathbf{v}_q \cdot \mathbf{v}_p,\;\; s_q \mathbf{v}_p + s_p \mathbf{v}_q + \mathbf{v}_q \times \mathbf{v}_p)$$
+    </div>
+    <p>四元数乘法<strong>不可交换</strong>（$qp \neq pq$），但满足结合律。</p>
+
+    <p><strong>共轭与模长：</strong></p>
+    <div class="formula">
+        $$q^* = (s, -\mathbf{v}) = q_0 - q_1 i - q_2 j - q_3 k$$
+        $$\|q\| = \sqrt{q q^*} = \sqrt{q_0^2 + q_1^2 + q_2^2 + q_3^2}$$
+    </div>
+
+    <p><strong>逆：</strong></p>
+    <div class="formula">
+        $$q^{-1} = \frac{q^*}{\|q\|^2}$$
+        <p>对于单位四元数（$\|q\|=1$），有 $q^{-1} = q^*$。</p>
+    </div>
+</div>
+
+<!-- ==================== 2. 四元数表示旋转 ==================== -->
+<h2>2. 用四元数表示三维旋转</h2>
+
+<div class="card def">
+    <h3>2.1 旋转的四元数表示</h3>
+    <p>绕单位轴 $\mathbf{n} = (n_x, n_y, n_z)^\top$ 旋转角度 $\theta$，对应的<strong>单位四元数</strong>为：</p>
+    <div class="formula">
+        $$q = \cos\frac{\theta}{2} + \sin\frac{\theta}{2}\,(n_x i + n_y j + n_z k)$$
+        $$q = \left(\cos\frac{\theta}{2},\; \sin\frac{\theta}{2}\,\mathbf{n}\right)$$
+    </div>
+    <div class="note">
+        角度使用半角 $\theta/2$，这是四元数旋转的核心特征。旋转 $2\pi$ 对应 $q = -1$，旋转 $4\pi$ 才回到 $q = +1$（双覆盖性质）。
+    </div>
+</div>
+
+<div class="card def">
+    <h3>2.2 用四元数旋转向量</h3>
+    <p>将三维点 $\mathbf{p} = (x, y, z)^\top$ 视为纯四元数 $p = (0, \mathbf{p})$，旋转后的点 $p'$ 为：</p>
+    <div class="formula">
+        $$p' = q\,p\,q^{-1} = q\,p\,q^* \quad (\text{单位四元数})$$
+    </div>
+    <p>结果 $p'$ 仍为纯四元数 $(0, \mathbf{p}')$，其虚部即为旋转后的三维坐标。</p>
+</div>
+
+<div class="card def">
+    <h3>2.3 四元数与旋转矩阵的转换</h3>
+    <p><strong>四元数 → 旋转矩阵：</strong>设单位四元数 $q = (q_0, q_1, q_2, q_3)$，则对应的旋转矩阵为：</p>
+    <div class="formula">
+        $$R = \begin{bmatrix}
+        1-2(q_2^2+q_3^2) & 2(q_1q_2-q_0q_3) & 2(q_1q_3+q_0q_2) \\
+        2(q_1q_2+q_0q_3) & 1-2(q_1^2+q_3^2) & 2(q_2q_3-q_0q_1) \\
+        2(q_1q_3-q_0q_2) & 2(q_2q_3+q_0q_1) & 1-2(q_1^2+q_2^2)
+        \end{bmatrix}$$
+    </div>
+    <p><strong>旋转矩阵 → 四元数：</strong></p>
+    <div class="formula">
+        $$q_0 = \frac{1}{2}\sqrt{1 + \mathrm{tr}(R)}$$
+        $$q_1 = \frac{R_{32} - R_{23}}{4q_0},\quad q_2 = \frac{R_{13} - R_{31}}{4q_0},\quad q_3 = \frac{R_{21} - R_{12}}{4q_0}$$
+    </div>
+    <div class="note">
+        当 $\mathrm{tr}(R) \approx -1$ 时（$\theta \approx \pi$），$q_0 \to 0$，需改用其他分量作为分母以避免数值不稳定。
+    </div>
+</div>
+
+<!-- ==================== 3. 旋转向量 ↔ 四元数 ↔ 旋转矩阵 ==================== -->
+<h2>3. 旋转向量、四元数、旋转矩阵的转换关系</h2>
+
+<div class="card def">
+    <h3>3.1 旋转向量（轴角表示）</h3>
+    <p>旋转向量 $\mathbf{r} = \theta\mathbf{n} \in \mathbb{R}^3$，其中 $\|\mathbf{r}\| = \theta$ 为旋转角，$\mathbf{n} = \mathbf{r}/\|\mathbf{r}\|$ 为旋转轴。</p>
+</div>
+
+<div class="card def">
+    <h3>3.2 三者之间的转换</h3>
+    <div class="hierarchy">
+        <div class="box">旋转向量<br>$\mathbf{r} = \theta\mathbf{n}$</div>
+        <div class="arrow">⟷</div>
+        <div class="box">单位四元数<br>$q = (\cos\frac{\theta}{2},\, \sin\frac{\theta}{2}\,\mathbf{n})$</div>
+        <div class="arrow">⟷</div>
+        <div class="box">旋转矩阵<br>$R \in \mathrm{SO}(3)$</div>
+    </div>
+
+    <p><strong>旋转向量 → 四元数：</strong></p>
+    <div class="formula">
+        $$\theta = \|\mathbf{r}\|,\quad \mathbf{n} = \frac{\mathbf{r}}{\theta},\quad q = \left(\cos\frac{\theta}{2},\; \sin\frac{\theta}{2}\,\mathbf{n}\right)$$
+    </div>
+
+    <p><strong>四元数 → 旋转向量：</strong></p>
+    <div class="formula">
+        $$\theta = 2\arccos(q_0),\quad \mathbf{n} = \frac{(q_1,q_2,q_3)}{\sin(\theta/2)},\quad \mathbf{r} = \theta\mathbf{n}$$
+    </div>
+
+    <p><strong>旋转向量 → 旋转矩阵（罗德里格斯公式）：</strong></p>
+    <div class="formula">
+        $$R = I + \sin\theta\,[\mathbf{n}]_\times + (1-\cos\theta)\,[\mathbf{n}]_\times^2$$
+        <p>其中 $[\mathbf{n}]_\times$ 为 $\mathbf{n}$ 的反对称矩阵：</p>
+        $$[\mathbf{n}]_\times = \begin{bmatrix}
+        0 & -n_z & n_y \\
+        n_z & 0 & -n_x \\
+        -n_y & n_x & 0
+        \end{bmatrix}$$
+    </div>
+
+    <p><strong>旋转矩阵 → 旋转向量：</strong></p>
+    <div class="formula">
+        $$\theta = \arccos\left(\frac{\mathrm{tr}(R)-1}{2}\right)$$
+        $$\mathbf{n} = \frac{1}{2\sin\theta}\begin{bmatrix} R_{32}-R_{23} \\ R_{13}-R_{31} \\ R_{21}-R_{12} \end{bmatrix}$$
+    </div>
+</div>
+
+<div class="card def">
+    <h3>3.3 对比总结</h3>
+    <table>
+        <tr><th>性质</th><th>旋转矩阵</th><th>旋转向量</th><th>单位四元数</th></tr>
+        <tr><td>自由度</td><td>9（约束 $R^\top R=I$）</td><td>3</td><td>4（约束 $\|q\|=1$）</td></tr>
+        <tr><td>奇点</td><td>无</td><td>$\theta=0$ 时轴不定</td><td>无</td></tr>
+        <tr><td>万向锁</td><td>无</td><td>无</td><td>无</td></tr>
+        <tr><td>插值</td><td>困难</td><td>困难</td><td>SLERP 平滑插值</td></tr>
+        <tr><td>存储</td><td>9 个浮点数</td><td>3 个浮点数</td><td>4 个浮点数</td></tr>
+        <tr><td>复合旋转</td><td>矩阵乘法</td><td>需转矩阵</td><td>四元数乘法</td></tr>
+        <tr><td>SLAM 常用场景</td><td>坐标变换</td><td>优化变量</td><td>优化变量 / 插值</td></tr>
+    </table>
+</div>
+
+<!-- ==================== 4. 变换层次 ==================== -->
+<h2>4. 相似变换 · 仿射变换 · 摄影变换</h2>
+
+<div class="card def">
+    <h3>4.1 变换的定义与自由度</h3>
+
+    <p><strong>欧氏变换（Euclidean / Rigid Transform）：</strong></p>
+    <div class="formula">
+        $$\mathbf{x}' = R\mathbf{x} + \mathbf{t}, \quad R \in \mathrm{SO}(3),\;\; \mathbf{t} \in \mathbb{R}^3$$
+        <p>齐次坐标形式：</p>
+        $$T_E = \begin{bmatrix} R & \mathbf{t} \\ \mathbf{0}^\top & 1 \end{bmatrix} \in \mathrm{SE}(3)$$
+    </div>
+    <p>自由度：6（3 旋转 + 3 平移）。保持长度、角度、面积不变。</p>
+
+    <p><strong>相似变换（Similarity Transform）：</strong></p>
+    <div class="formula">
+        $$\mathbf{x}' = sR\mathbf{x} + \mathbf{t}, \quad s > 0$$
+        $$T_S = \begin{bmatrix} sR & \mathbf{t} \\ \mathbf{0}^\top & 1 \end{bmatrix}$$
+    </div>
+    <p>自由度：7（3 旋转 + 3 平移 + 1 尺度）。保持角度和形状，长度按比例缩放。</p>
+
+    <p><strong>仿射变换（Affine Transform）：</strong></p>
+    <div class="formula">
+        $$\mathbf{x}' = A\mathbf{x} + \mathbf{t}, \quad A \in \mathbb{R}^{3\times 3} \text{ 可逆}$$
+        $$T_A = \begin{bmatrix} A & \mathbf{t} \\ \mathbf{0}^\top & 1 \end{bmatrix}$$
+    </div>
+    <p>自由度：12（9 线性变换 + 3 平移）。保持平行性和比例，不保持角度和长度。</p>
+
+    <p><strong>摄影变换 / 投影变换（Projective / Homography Transform）：</strong></p>
+    <div class="formula">
+        $$\mathbf{x}' = \frac{A\mathbf{x} + \mathbf{t}}{\mathbf{c}^\top\mathbf{x} + d}$$
+        <p>齐次坐标下为线性变换（相差一个尺度因子）：</p>
+        $$T_P = \begin{bmatrix} A & \mathbf{t} \\ \mathbf{c}^\top & d \end{bmatrix} \in \mathrm{PGL}(n)$$
+    </div>
+    <p>自由度：15（$4\times4$ 矩阵 16 个元素 − 1 个尺度因子）。不保持平行性（平行线可交于灭点）。</p>
+</div>
+
+<div class="card def">
+    <h3>4.2 变换的层次关系</h3>
+    <div class="hierarchy">
+        <div class="box" style="border-color: var(--accent2);">欧氏变换<br>$\begin{bmatrix}R&t\\0&1\end{bmatrix}$<br><small>6 DOF</small></div>
+        <div class="arrow">⊂</div>
+        <div class="box" style="border-color: var(--accent);">相似变换<br>$\begin{bmatrix}sR&t\\0&1\end{bmatrix}$<br><small>7 DOF</small></div>
+        <div class="arrow">⊂</div>
+        <div class="box" style="border-color: var(--accent3);">仿射变换<br>$\begin{bmatrix}A&t\\0&1\end{bmatrix}$<br><small>12 DOF</small></div>
+        <div class="arrow">⊂</div>
+        <div class="box" style="border-color: #ef5350;">摄影变换<br>$\begin{bmatrix}A&t\\c^\top&d\end{bmatrix}$<br><small>15 DOF</small></div>
+    </div>
+
+    <div class="note">
+        每个变换类都是后一个的真子集。欧氏变换保持所有度量性质，摄影变换仅保持共线性和交比（cross ratio）。越靠后的变换越"灵活"，但保留的几何不变量越少。
+    </div>
+</div>
+
+<div class="card def">
+    <h3>4.3 变换保持的几何不变量</h3>
+    <table>
+        <tr><th>不变量</th><th>欧氏</th><th>相似</th><th>仿射</th><th>摄影</th></tr>
+        <tr><td>长度</td><td>✓</td><td>✗（比例）</td><td>✗</td><td>✗</td></tr>
+        <tr><td>角度</td><td>✓</td><td>✓</td><td>✗</td><td>✗</td></tr>
+        <tr><td>面积比</td><td>✓</td><td>✓（$s^2$）</td><td>✗</td><td>✗</td></tr>
+        <tr><td>平行性</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td></tr>
+        <tr><td>共线性</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>交比</td><td>✓</td><td>✓</td><td>✓</td><td>✓</td></tr>
+        <tr><td>简单比值</td><td>✓</td><td>✓</td><td>✓</td><td>✗</td></tr>
+    </table>
+</div>
+
+<div class="card def">
+    <h3>4.4 在 SLAM 中的应用场景</h3>
+    <table>
+        <tr><th>变换类型</th><th>SLAM 中的典型应用</th></tr>
+        <tr><td>欧氏变换</td><td>相机位姿估计、IMU 预积分、地图点坐标变换</td></tr>
+        <tr><td>相似变换</td><td>单目 SLAM 尺度漂移修正、多地图对齐（如 ORB-SLAM 的 Sim(3) 回环检测）</td></tr>
+        <tr><td>仿射变换</td><td>图像仿射扭曲、特征区域仿射不变量（如 A-SIFT）</td></tr>
+        <tr><td>摄影变换</td><td>单应矩阵 $H$ 估计、平面场景重建、图像拼接</td></tr>
+    </table>
+</div>
+
+<!-- ==================== 5. 单应矩阵 ==================== -->
+<h2>5. 补充：单应矩阵（Homography）</h2>
+
+<div class="card def">
+    <h3>5.1 定义</h3>
+    <p>两个平面之间的投影变换用 $3\times3$ 单应矩阵 $H$ 表示（相差一个尺度因子，8 DOF）：</p>
+    <div class="formula">
+        $$\begin{bmatrix} u' \\ v' \\ 1 \end{bmatrix} \sim H \begin{bmatrix} u \\ v \\ 1 \end{bmatrix}, \quad H = \begin{bmatrix} h_{11} & h_{12} & h_{13} \\ h_{21} & h_{22} & h_{23} \\ h_{31} & h_{32} & h_{33} \end{bmatrix}$$
+    </div>
+</div>
+
+<div class="card def">
+    <h3>5.2 单应与相机运动的关系</h3>
+    <p>当场景为平面时，两帧之间的单应矩阵可分解为：</p>
+    <div class="formula">
+        $$H = K\left(R + \frac{\mathbf{t}\mathbf{n}^\top}{d}\right)K^{-1}$$
+    </div>
+    <p>其中 $K$ 为内参，$R, \mathbf{t}$ 为相机运动，$\mathbf{n}$ 为平面法向量，$d$ 为平面到相机的距离。</p>
+    <div class="note">
+        单应矩阵分解可恢复相机运动，但存在<strong>四种可能的解</strong>，需通过深度正性约束选择正确解。
+    </div>
+</div>
+
+<!-- ==================== 6. 总结 ==================== -->
+<h2>6. 总结</h2>
+
+<div class="card def">
+    <h3>6.1 旋转表示的选择</h3>
+    <ul>
+        <li><strong>旋转矩阵</strong>：直观，适合坐标变换；但参数冗余、插值困难。</li>
+        <li><strong>旋转向量</strong>：最小参数（3），适合优化变量；但在 $\theta=0$ 和 $\theta=\pi$ 处有奇点。</li>
+        <li><strong>四元数</strong>：无奇点、4 参数、支持 SLERP 插值；是 SLAM 优化中最常用的旋转表示。</li>
+    </ul>
+</div>
+
+<div class="card def">
+    <h3>6.2 变换层次总结</h3>
+    <p>从约束最强到最灵活：</p>
+    <div class="formula">
+        $$\text{欧氏变换}\;(6) \;\subset\; \text{相似变换}\;(7) \;\subset\; \text{仿射变换}\;(12) \;\subset\; \text{摄影变换}\;(15)$$
+    </div>
+    <p>SLAM 中的相机位姿使用<strong>欧氏变换</strong>（SE(3)），多地图对齐时使用<strong>相似变换</strong>（Sim(3)），而平面场景的图像对应关系用<strong>单应矩阵</strong>（摄影变换的子集）描述。</p>
+</div>
+
+</div>
+</body>
+</html>

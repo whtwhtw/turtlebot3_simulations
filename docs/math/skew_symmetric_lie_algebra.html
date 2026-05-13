@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>反对称矩阵、李群与李代数 — SLAM 中的旋转与变换</title>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --card-bg: #1a1d27;
+            --text: #e0e0e0;
+            --accent: #64b5f6;
+            --accent2: #81c784;
+            --accent3: #ffb74d;
+            --accent4: #ef5350;
+            --border: #2c2f3a;
+            --code-bg: #12141c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+            padding: 2rem;
+        }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 0.5rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+            color: var(--accent);
+            margin: 2.5rem 0 1rem;
+            padding-left: 0.75rem;
+            border-left: 4px solid var(--accent);
+        }
+        h3 {
+            font-size: 1.2rem;
+            color: var(--accent2);
+            margin: 1.5rem 0 0.75rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .def { border-left: 4px solid var(--accent2); background: #1a2320; }
+        .formula {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        .note {
+            background: #2a2218;
+            border-left: 4px solid var(--accent3);
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .note::before { content: "💡 "; }
+        .proof {
+            background: #1e1525;
+            border-left: 4px solid #ab70e0;
+            padding: 1rem 1.2rem;
+            margin: 1rem 0;
+            border-radius: 0 6px 6px 0;
+        }
+        .proof::before { content: "📐 "; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: var(--code-bg);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 0.7rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        th { background: #222533; color: var(--accent); }
+        code {
+            background: var(--code-bg);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9em;
+        }
+        mjx-container { color: #f5f5f5 !important; }
+
+        /* 关系图样式 */
+        .diagram-container {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+        .diagram-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
+            margin: 0.8rem 0;
+            flex-wrap: wrap;
+        }
+        .diagram-label {
+            color: #888;
+            font-size: 0.85rem;
+            min-width: 100px;
+            text-align: right;
+            padding-right: 1rem;
+        }
+        .diagram-box {
+            background: var(--card-bg);
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            text-align: center;
+            min-width: 140px;
+            font-size: 0.9rem;
+        }
+        .diagram-box.lie-group { border-color: var(--accent); }
+        .diagram-box.lie-algebra { border-color: var(--accent2); }
+        .diagram-box.rot { border-color: var(--accent3); }
+        .diagram-box.transform { border-color: var(--accent4); }
+        .diagram-arrow { color: var(--accent); font-size: 1.3rem; min-width: 40px; text-align: center; }
+        .diagram-arrow.down { font-size: 1.8rem; margin: 0.3rem 0; }
+        .diagram-section {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1rem;
+            margin: 1.5rem 0 0.5rem;
+            padding-bottom: 0.3rem;
+            border-bottom: 1px dashed var(--border);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+
+<h1>反对称矩阵、李群与李代数</h1>
+<p class="subtitle">从三维向量的反对称矩阵到 SO(3) 的指数映射：完整推导与对应关系</p>
+
+<!-- ==================== 1. 反对称矩阵 ==================== -->
+<h2>1. 三维向量的反对称矩阵（Skew-Symmetric Matrix）</h2>
+
+<div class="card def">
+    <h3>1.1 定义</h3>
+    <p>对任意三维向量 $\mathbf{v} = (v_1, v_2, v_3)^\top \in \mathbb{R}^3$，其对应的反对称矩阵为：</p>
+    <div class="formula">
+        $$\mathbf{v}^{\wedge} = \begin{bmatrix}
+        0 & -v_3 & v_2 \\
+        v_3 & 0 & -v_1 \\
+        -v_2 & v_1 & 0
+        \end{bmatrix} \in \mathbb{R}^{3 \times 3}$$
+    </div>
+    <p>记号 $\wedge$ 将三维向量映射为 $3\times3$ 反对称矩阵，其逆运算记为 $\vee$：</p>
+    <div class="formula">
+        $$\left(\mathbf{v}^{\wedge}\right)^{\vee} = \mathbf{v}$$
+    </div>
+    <p>所有 $3\times3$ 反对称矩阵构成的空间记为 $\mathfrak{so}(3)$：</p>
+    <div class="formula">
+        $$\mathfrak{so}(3) = \left\{ S \in \mathbb{R}^{3\times 3} \mid S^\top = -S \right\}$$
+    </div>
+</div>
+
+<div class="card def">
+    <h3>1.2 反对称矩阵与叉积的关系</h3>
+    <p>两个三维向量的叉积可以用反对称矩阵表示：</p>
+    <div class="formula">
+        $$\mathbf{a} \times \mathbf{b} = \mathbf{a}^{\wedge}\,\mathbf{b}$$
+    </div>
+    <p>验证：</p>
+    <div class="formula">
+        $$\begin{bmatrix}
+        0 & -a_3 & a_2 \\
+        a_3 & 0 & -a_1 \\
+        -a_2 & a_1 & 0
+        \end{bmatrix}
+        \begin{bmatrix} b_1 \\ b_2 \\ b_3 \end{bmatrix}
+        = \begin{bmatrix}
+        a_2 b_3 - a_3 b_2 \\
+        a_3 b_1 - a_1 b_3 \\
+        a_1 b_2 - a_2 b_1
+        \end{bmatrix}
+        = \mathbf{a} \times \mathbf{b}$$
+    </div>
+    <div class="note">
+        这个等式是理解反对称矩阵几何意义的核心：反对称矩阵 $\mathbf{a}^{\wedge}$ 本质上是"叉积算子"，作用于任意向量时，等价于与 $\mathbf{a}$ 做叉积。
+    </div>
+</div>
+
+<div class="card def">
+    <h3>1.3 反对称矩阵的重要性质</h3>
+
+    <p><strong>性质 1：</strong>$S^\top = -S$，故其特征值为纯虚数或零。</p>
+
+    <p><strong>性质 2：</strong>对单位向量 $\mathbf{a}$（$\|\mathbf{a}\| = 1$），其反对称矩阵满足：</p>
+    <div class="formula">
+        $$(\mathbf{a}^{\wedge})^2 = \mathbf{a}\mathbf{a}^\top - I$$
+        $$(\mathbf{a}^{\wedge})^3 = -\mathbf{a}^{\wedge}$$
+        $$(\mathbf{a}^{\wedge})^4 = -(\mathbf{a}^{\wedge})^2$$
+    </div>
+    <p><strong>证明概要：</strong></p>
+    <div class="formula">
+        $$(\mathbf{a}^{\wedge})^2 = \mathbf{a}^{\wedge}\mathbf{a}^{\wedge} = \mathbf{a}(\mathbf{a}^{\wedge}\cdot) = \mathbf{a}(\mathbf{a}^\top \cdot) - (\mathbf{a}^\top \mathbf{a})I = \mathbf{a}\mathbf{a}^\top - I$$
+        <p>（利用了向量叉积恒等式 $\mathbf{a} \times (\mathbf{a} \times \mathbf{x}) = \mathbf{a}(\mathbf{a}^\top \mathbf{x}) - (\mathbf{a}^\top \mathbf{a})\mathbf{x}$）</p>
+    </div>
+
+    <p><strong>性质 3：</strong>幂的循环模式（对单位向量 $\mathbf{a}$）：</p>
+    <div class="formula">
+        $$\begin{aligned}
+        (\mathbf{a}^{\wedge})^1 &= \mathbf{a}^{\wedge} \\
+        (\mathbf{a}^{\wedge})^2 &= \mathbf{a}\mathbf{a}^\top - I \\
+        (\mathbf{a}^{\wedge})^3 &= -\mathbf{a}^{\wedge} \\
+        (\mathbf{a}^{\wedge})^4 &= -(\mathbf{a}^{\wedge})^2 \\
+        (\mathbf{a}^{\wedge})^5 &= \mathbf{a}^{\wedge} \quad (\text{循环回到 }(\mathbf{a}^{\wedge})^1)
+        \end{aligned}$$
+    </div>
+</div>
+
+<!-- ==================== 2. 切空间与李代数 ==================== -->
+<h2>2. 切空间、李群与李代数</h2>
+
+<div class="card def">
+    <h3>2.1 SO(3) 旋转群</h3>
+    <p>三维旋转群 SO(3) 定义为：</p>
+    <div class="formula">
+        $$\mathrm{SO}(3) = \left\{ R \in \mathbb{R}^{3\times 3} \mid R^\top R = I,\;\; \det(R) = 1 \right\}$$
+    </div>
+    <p>SO(3) 是一个流形（manifold），其每一点处的切空间（tangent space）是一个向量空间。</p>
+</div>
+
+<div class="card def">
+    <h3>2.2 SO(3) 在单位矩阵处的切空间 = $\mathfrak{so}(3)$</h3>
+    <p>考虑 SO(3) 上一条通过单位矩阵 $I$ 的光滑曲线 $R(t)$，满足：</p>
+    <div class="formula">
+        $$R(0) = I, \quad R(t)^\top R(t) = I$$
+    </div>
+    <p>对 $R(t)^\top R(t) = I$ 在 $t=0$ 处求导：</p>
+    <div class="formula">
+        $$\left.\frac{d}{dt}\right|_{t=0}\left(R(t)^\top R(t)\right) = \dot{R}(0)^\top R(0) + R(0)^\top \dot{R}(0) = \dot{R}(0)^\top + \dot{R}(0) = 0$$
+    </div>
+    <p>因此 $\dot{R}(0)$ 是一个反对称矩阵。记 $\dot{R}(0) = \boldsymbol{\omega}^{\wedge}$，其中 $\boldsymbol{\omega} \in \mathbb{R}^3$。</p>
+
+    <div class="note">
+        结论：SO(3) 在单位元处的切空间恰好是反对称矩阵空间 $\mathfrak{so}(3)$。三维向量 $\boldsymbol{\omega}$ 通过 $\wedge$ 映射成为切空间中的切向量——这就是李代数 $\mathfrak{so}(3)$。
+    </div>
+</div>
+
+<div class="card def">
+    <h3>2.3 旋转矩阵在切空间附近的局部参数化</h3>
+    <p>旋转矩阵 $R(t)$ 在单位矩阵附近可以写为：</p>
+    <div class="formula">
+        $$R(t) = \exp(t\,\boldsymbol{\omega}^{\wedge})$$
+    </div>
+    <p>其中 $\boldsymbol{\omega} \in \mathbb{R}^3$ 是角速度向量，$\boldsymbol{\omega}^{\wedge} \in \mathfrak{so}(3)$ 是切空间中的元素，$\exp$ 是矩阵指数映射。</p>
+
+    <p><strong>矩阵指数的定义（泰勒级数）：</strong></p>
+    <div class="formula">
+        $$\exp(S) = \sum_{n=0}^{\infty} \frac{1}{n!} S^n = I + S + \frac{1}{2!}S^2 + \frac{1}{3!}S^3 + \cdots$$
+    </div>
+    <div class="note">
+        矩阵指数 $\exp: \mathfrak{so}(3) \to \mathrm{SO}(3)$ 将切空间（李代数）中的元素映射到流形（李群）上的点。这是从"局部线性"到"全局非线性"的桥梁。
+    </div>
+</div>
+
+<!-- ==================== 3. Rodrigues 公式推导 ==================== -->
+<h2>3. Rodrigues 公式的泰勒展开推导</h2>
+
+<div class="card def">
+    <h3>3.1 问题描述</h3>
+    <p>设 $\mathbf{a} \in \mathbb{R}^3$ 为单位向量（$\|\mathbf{a}\| = 1$），$\theta \in \mathbb{R}$ 为旋转角度，计算：</p>
+    <div class="formula">
+        $$\exp(\theta\,\mathbf{a}^{\wedge}) = I + \theta\,\mathbf{a}^{\wedge} + \frac{\theta^2}{2!}(\mathbf{a}^{\wedge})^2 + \frac{\theta^3}{3!}(\mathbf{a}^{\wedge})^3 + \frac{\theta^4}{4!}(\mathbf{a}^{\wedge})^4 + \cdots$$
+    </div>
+</div>
+
+<div class="proof">
+    <h3>3.2 推导过程</h3>
+    <p>利用单位向量反对称矩阵的幂循环性质：</p>
+    <div class="formula">
+        $$(\mathbf{a}^{\wedge})^1 = \mathbf{a}^{\wedge},\quad (\mathbf{a}^{\wedge})^2 = \mathbf{a}\mathbf{a}^\top - I,\quad (\mathbf{a}^{\wedge})^3 = -\mathbf{a}^{\wedge},\quad (\mathbf{a}^{\wedge})^4 = -(\mathbf{a}^{\wedge})^2$$
+    </div>
+
+    <p>将泰勒级数按 $(\mathbf{a}^{\wedge})^1$ 和 $(\mathbf{a}^{\wedge})^2$ 分组：</p>
+    <div class="formula">
+        $$\exp(\theta\,\mathbf{a}^{\wedge}) = I + \left(\theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \cdots\right)\mathbf{a}^{\wedge} + \left(\frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \frac{\theta^6}{6!} - \cdots\right)(\mathbf{a}^{\wedge})^2$$
+    </div>
+
+    <p>识别三角函数的泰勒级数：</p>
+    <div class="formula">
+        $$\sin\theta = \theta - \frac{\theta^3}{3!} + \frac{\theta^5}{5!} - \cdots$$
+        $$1 - \cos\theta = \frac{\theta^2}{2!} - \frac{\theta^4}{4!} + \frac{\theta^6}{6!} - \cdots$$
+    </div>
+
+    <p>代入得到：</p>
+    <div class="formula">
+        $$\exp(\theta\,\mathbf{a}^{\wedge}) = I + \sin\theta\,\mathbf{a}^{\wedge} + (1 - \cos\theta)\,(\mathbf{a}^{\wedge})^2$$
+    </div>
+
+    <p>将 $(\mathbf{a}^{\wedge})^2 = \mathbf{a}\mathbf{a}^\top - I$ 代入：</p>
+    <div class="formula">
+        $$\exp(\theta\,\mathbf{a}^{\wedge}) = I + \sin\theta\,\mathbf{a}^{\wedge} + (1 - \cos\theta)\,(\mathbf{a}\mathbf{a}^\top - I)$$
+    </div>
+
+    <p>整理 $I$ 的系数：</p>
+    <div class="formula">
+        $$\exp(\theta\,\mathbf{a}^{\wedge}) = \cos\theta\,I + \sin\theta\,\mathbf{a}^{\wedge} + (1 - \cos\theta)\,\mathbf{a}\mathbf{a}^\top$$
+    </div>
+
+    <p><strong>这正是 Rodrigues 旋转公式！</strong>它表示绕单位轴 $\mathbf{a}$ 旋转角度 $\theta$ 的旋转矩阵。</p>
+</div>
+
+<div class="card def">
+    <h3>3.3 与 Rodrigues 经典形式的对应</h3>
+    <p>Rodrigues 经典公式（从旋转向量到旋转矩阵）：</p>
+    <div class="formula">
+        $$R = I + \sin\theta\;\mathbf{n}^{\wedge} + (1 - \cos\theta)\;(\mathbf{n}^{\wedge})^2$$
+        $$R = \cos\theta\;I + \sin\theta\;\mathbf{n}^{\wedge} + (1 - \cos\theta)\;\mathbf{n}\mathbf{n}^\top$$
+    </div>
+    <p>其中 $\theta$ 为旋转角，$\mathbf{n}$ 为单位旋转轴。此处 $\theta$ 与推导中的变量含义一致、$\mathbf{a} = \mathbf{n}$。</p>
+
+    <p><strong>一般三维向量 $\boldsymbol{\phi} = \theta\,\mathbf{n}$（非单位）的情形：</strong></p>
+    <div class="formula">
+        $$\exp(\boldsymbol{\phi}^{\wedge}) = \exp(\theta\,\mathbf{n}^{\wedge}) = \cos\theta\;I + \sin\theta\;\mathbf{n}^{\wedge} + (1 - \cos\theta)\;\mathbf{n}\mathbf{n}^\top$$
+    </div>
+</div>
+
+<div class="card def">
+    <h3>3.4 直观理解</h3>
+    <div class="note">
+        推导的本质：利用 $(\mathbf{a}^{\wedge})^3 = -\mathbf{a}^{\wedge}$ 的循环性质，矩阵指数的无穷级数坍缩为 $\sin$ 和 $\cos$ 的有限组合。这与 $e^{i\theta} = \cos\theta + i\sin\theta$ 的 Euler 公式同源——都是反对称（或纯虚数）算子的指数展开。
+    </div>
+</div>
+
+<!-- ==================== 4. SE(3) 的指数映射 ==================== -->
+<h2>4. SE(3) 的指数映射（刚体变换）</h2>
+
+<div class="card def">
+    <h3>4.1 SE(3) 与李代数 $\mathfrak{se}(3)$</h3>
+    <p>刚体变换群 SE(3) 的元素为：</p>
+    <div class="formula">
+        $$T = \begin{bmatrix} R & \mathbf{t} \\ \mathbf{0}^\top & 1 \end{bmatrix} \in \mathrm{SE}(3)$$
+    </div>
+    <p>其李代数 $\mathfrak{se}(3)$ 中的元素用六维向量 $\boldsymbol{\xi} = \begin{bmatrix}\boldsymbol{\rho} \\ \boldsymbol{\phi}\end{bmatrix} \in \mathbb{R}^6$ 表示，对应的 $4\times4$ 矩阵为：</p>
+    <div class="formula">
+        $$\boldsymbol{\xi}^{\wedge} = \begin{bmatrix} \boldsymbol{\phi}^{\wedge} & \boldsymbol{\rho} \\ \mathbf{0}^\top & 0 \end{bmatrix} \in \mathbb{R}^{4\times 4}$$
+    </div>
+    <p>其中 $\boldsymbol{\phi} \in \mathbb{R}^3$ 为旋转部分，$\boldsymbol{\rho} \in \mathbb{R}^3$ 为平移部分。</p>
+</div>
+
+<div class="card def">
+    <h3>4.2 SE(3) 的指数映射</h3>
+    <div class="formula">
+        $$\exp(\boldsymbol{\xi}^{\wedge}) = \begin{bmatrix} \exp(\boldsymbol{\phi}^{\wedge}) & J\,\boldsymbol{\rho} \\ \mathbf{0}^\top & 1 \end{bmatrix}$$
+    </div>
+    <p>其中 $\exp(\boldsymbol{\phi}^{\wedge})$ 即 SO(3) 的指数映射（Rodrigues 公式），$J$ 为左雅可比（left Jacobian）：</p>
+    <div class="formula">
+        $$J = \frac{\sin\theta}{\theta}I + \left(1 - \frac{\sin\theta}{\theta}\right)\mathbf{n}\mathbf{n}^\top + \frac{1 - \cos\theta}{\theta}\mathbf{n}^{\wedge}$$
+    </div>
+    <p>其中 $\theta = \|\boldsymbol{\phi}\|$，$\mathbf{n} = \boldsymbol{\phi}/\theta$。</p>
+</div>
+
+<!-- ==================== 5. 对应关系图 ==================== -->
+<h2>5. 李群 · 李代数 · 三维旋转 · 三维变换对应关系</h2>
+
+<div class="card def">
+    <h3>5.1 对应关系总览</h3>
+
+    <div class="diagram-container">
+        <div class="diagram-section">① 纯旋转：SO(3) ↔ 𝔰𝔬(3)</div>
+        <div class="diagram-row">
+            <div class="diagram-label">李群</div>
+            <div class="diagram-box lie-group">SO(3)<br><small>旋转矩阵群</small></div>
+            <div class="diagram-arrow">⟷</div>
+            <div class="diagram-box rot">旋转矩阵 $R$<br><small>$R^\top R = I,\; \det R = 1$</small></div>
+        </div>
+        <div class="diagram-row">
+            <div class="diagram-arrow down">↑↓ exp / log</div>
+        </div>
+        <div class="diagram-row">
+            <div class="diagram-label">李代数</div>
+            <div class="diagram-box lie-algebra">𝔰𝔬(3)<br><small>切空间</small></div>
+            <div class="diagram-arrow">⟷</div>
+            <div class="diagram-box rot">旋转向量 $\boldsymbol{\phi}$<br><small>$\boldsymbol{\phi}^\wedge \in \mathfrak{so}(3)$</small></div>
+        </div>
+
+        <div class="diagram-section">② 刚体变换：SE(3) ↔ 𝔰𝔢(3)</div>
+        <div class="diagram-row">
+            <div class="diagram-label">李群</div>
+            <div class="diagram-box transform">SE(3)<br><small>刚体变换群</small></div>
+            <div class="diagram-arrow">⟷</div>
+            <div class="diagram-box transform">$\begin{bmatrix}R & \mathbf{t} \\ 0 & 1\end{bmatrix}$<br><small>旋转 + 平移</small></div>
+        </div>
+        <div class="diagram-row">
+            <div class="diagram-arrow down">↑↓ exp / log</div>
+        </div>
+        <div class="diagram-row">
+            <div class="diagram-label">李代数</div>
+            <div class="diagram-box lie-algebra">𝔰𝔢(3)<br><small>6维切空间</small></div>
+            <div class="diagram-arrow">⟷</div>
+            <div class="diagram-box transform">$\boldsymbol{\xi} = \begin{bmatrix}\boldsymbol{\rho} \\ \boldsymbol{\phi}\end{bmatrix}$<br><small>$\xi^\wedge = \begin{bmatrix}\phi^\wedge & \rho \\ 0 & 0\end{bmatrix}$</small></div>
+        </div>
+
+        <div class="diagram-section">③ 相似变换：Sim(3) ↔ 𝔰𝔦𝔪(3)</div>
+        <div class="diagram-row">
+            <div class="diagram-label">李群</div>
+            <div class="diagram-box" style="border-color: #ce93d8;">Sim(3)<br><small>相似变换群</small></div>
+            <div class="diagram-arrow">⟷</div>
+            <div class="diagram-box" style="border-color: #ce93d8;">$\begin{bmatrix}sR & \mathbf{t} \\ 0 & 1\end{bmatrix}$<br><small>尺度 + 旋转 + 平移</small></div>
+        </div>
+        <div class="diagram-row">
+            <div class="diagram-arrow down">↑↓ exp / log</div>
+        </div>
+        <div class="diagram-row">
+            <div class="diagram-label">李代数</div>
+            <div class="diagram-box lie-algebra">𝔰𝔦𝔪(3)<br><small>7维切空间</small></div>
+            <div class="diagram-arrow">⟷</div>
+            <div class="diagram-box" style="border-color: #ce93d8;">$\boldsymbol{\zeta} = \begin{bmatrix}\boldsymbol{\rho} \\ \boldsymbol{\phi} \\ \sigma\end{bmatrix}$<br><small>平移 + 旋转 + 尺度</small></div>
+        </div>
+    </div>
+</div>
+
+<div class="card def">
+    <h3>5.2 指数映射与对数映射总结</h3>
+    <table>
+        <tr><th>李群</th><th>李代数</th><th>指数映射</th><th>对数映射</th><th>维度</th></tr>
+        <tr>
+            <td>SO(3)</td>
+            <td>$\mathfrak{so}(3)$</td>
+            <td>$\exp(\boldsymbol{\phi}^\wedge)$<br>Rodrigues 公式</td>
+            <td>$\boldsymbol{\phi} = \log(R)^\vee$<br>$\theta = \arccos\frac{\mathrm{tr}(R)-1}{2}$</td>
+            <td>3</td>
+        </tr>
+        <tr>
+            <td>SE(3)</td>
+            <td>$\mathfrak{se}(3)$</td>
+            <td>$\begin{bmatrix}\exp(\boldsymbol{\phi}^\wedge) & J\boldsymbol{\rho} \\ 0 & 1\end{bmatrix}$</td>
+            <td>$\boldsymbol{\phi} = \log(R)^\vee$<br>$\boldsymbol{\rho} = J^{-1}\mathbf{t}$</td>
+            <td>6</td>
+        </tr>
+        <tr>
+            <td>Sim(3)</td>
+            <td>$\mathfrak{sim}(3)$</td>
+            <td>$\begin{bmatrix}e^\sigma\exp(\boldsymbol{\phi}^\wedge) & * \\ 0 & 1\end{bmatrix}$</td>
+            <td>分解尺度、旋转、平移</td>
+            <td>7</td>
+        </tr>
+    </table>
+</div>
+
+<div class="card def">
+    <h3>5.3 SO(3) 上的扰动模型（BCH 公式）</h3>
+    <p>在 SLAM 优化中，需要对旋转进行扰动求导。设 $R = \exp(\boldsymbol{\phi}^\wedge)$，左扰动 $\Delta R = \exp(\delta\boldsymbol{\phi}^\wedge)$：</p>
+    <div class="formula">
+        $$\Delta R \cdot R = \exp(\delta\boldsymbol{\phi}^\wedge)\exp(\boldsymbol{\phi}^\wedge) \approx \exp\left((\boldsymbol{\phi} + J_l^{-1}\delta\boldsymbol{\phi})^\wedge\right)$$
+    </div>
+    <p>其中 $J_l$ 为 SO(3) 的左雅可比：</p>
+    <div class="formula">
+        $$J_l = \frac{\sin\theta}{\theta}I + \left(1 - \frac{\sin\theta}{\theta}\right)\mathbf{n}\mathbf{n}^\top + \frac{1-\cos\theta}{\theta}\mathbf{n}^\wedge$$
+    </div>
+    <div class="note">
+        当 $\theta \to 0$ 时，$J_l \to I$，此时 $\Delta R \cdot R \approx \exp((\boldsymbol{\phi} + \delta\boldsymbol{\phi})^\wedge)$，即小角度扰动下李代数可直接相加。
+    </div>
+</div>
+
+<!-- ==================== 6. 推导路线图 ==================== -->
+<h2>6. 完整推导路线图</h2>
+
+<div class="card def">
+    <div class="diagram-container">
+        <div class="diagram-section">Step 1: 从三维向量出发</div>
+        <div class="diagram-row">
+            <div class="diagram-box">$\mathbf{v} \in \mathbb{R}^3$</div>
+            <div class="diagram-arrow">⟶</div>
+            <div class="diagram-box">$\mathbf{v}^\wedge \in \mathfrak{so}(3)$<br><small>反对称矩阵</small></div>
+        </div>
+
+        <div class="diagram-section">Step 2: 切空间中的元素</div>
+        <div class="diagram-row">
+            <div class="diagram-box">$\boldsymbol{\omega}^\wedge \in \mathfrak{so}(3)$<br><small>$\mathrm{SO}(3)$ 在 $I$ 处的切向量</small></div>
+            <div class="diagram-arrow">⟶</div>
+            <div class="diagram-box">$R(t) = \exp(t\boldsymbol{\omega}^\wedge)$<br><small>切空间 → 流形</small></div>
+        </div>
+
+        <div class="diagram-section">Step 3: 泰勒展开 + 幂循环</div>
+        <div class="diagram-row">
+            <div class="diagram-box">$\exp(\theta\mathbf{a}^\wedge) = \sum \frac{\theta^n}{n!}(\mathbf{a}^\wedge)^n$</div>
+            <div class="diagram-arrow">⟶</div>
+            <div class="diagram-box">利用 $(\mathbf{a}^\wedge)^3 = -\mathbf{a}^\wedge$<br><small>级数坍缩</small></div>
+        </div>
+
+        <div class="diagram-section">Step 4: Rodrigues 公式</div>
+        <div class="diagram-row">
+            <div class="diagram-box lie-algebra">$\exp(\theta\mathbf{a}^\wedge)$</div>
+            <div class="diagram-arrow">=</div>
+            <div class="diagram-box rot">$\cos\theta \cdot I + \sin\theta \cdot \mathbf{a}^\wedge + (1-\cos\theta)\cdot\mathbf{a}\mathbf{a}^\top$</div>
+        </div>
+
+        <div class="diagram-section">Step 5: 对应关系闭环</div>
+        <div class="diagram-row">
+            <div class="diagram-box lie-algebra">$\boldsymbol{\phi} \in \mathbb{R}^3$<br><small>李代数（旋转向量）</small></div>
+            <div class="diagram-arrow">⟶ exp ⟶</div>
+            <div class="diagram-box lie-group">$R \in \mathrm{SO}(3)$<br><small>李群（旋转矩阵）</small></div>
+            <div class="diagram-arrow">⟶ log ⟶</div>
+            <div class="diagram-box lie-algebra">$\boldsymbol{\phi} \in \mathbb{R}^3$<br><small>恢复李代数</small></div>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 7. 总结 ==================== -->
+<h2>7. 总结</h2>
+
+<div class="card def">
+    <h3>7.1 核心结论</h3>
+    <ul>
+        <li>三维向量 $\mathbf{v}$ 通过 $\wedge$ 映射为反对称矩阵 $\mathbf{v}^\wedge$，这是叉积运算的矩阵表示。</li>
+        <li>反对称矩阵空间 $\mathfrak{so}(3)$ 是 SO(3) 在单位元处的切空间，即 SO(3) 的李代数。</li>
+        <li>矩阵指数 $\exp: \mathfrak{so}(3) \to \mathrm{SO}(3)$ 将切空间映射到流形，泰勒展开利用幂循环性质导出 Rodrigues 公式。</li>
+        <li>Rodrigues 公式：$\exp(\theta\mathbf{a}^\wedge) = \cos\theta \cdot I + \sin\theta \cdot \mathbf{a}^\wedge + (1-\cos\theta)\cdot\mathbf{a}\mathbf{a}^\top$，是轴角到旋转矩阵的解析表达。</li>
+    </ul>
+</div>
+
+<div class="card def">
+    <h3>7.2 为什么需要李代数？</h3>
+    <ul>
+        <li>SO(3) 和 SE(3) 是流形，不是向量空间，无法直接相加求导。</li>
+        <li>李代数是切空间（向量空间），可以在上面做加法、求导、优化。</li>
+        <li>指数/对数映射建立了李群与李代数之间的桥梁，使得可以在切空间优化后映射回流形。</li>
+        <li>SLAM 中的位姿优化（Bundle Adjustment、图优化）本质上是在李代数空间进行的。</li>
+    </ul>
+</div>
+
+</div>
+</body>
+</html>

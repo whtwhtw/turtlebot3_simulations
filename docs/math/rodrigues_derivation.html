@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>罗德里格斯公式推导</title>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+            background: linear-gradient(135deg, #e8ecf1 0%, #d5dde5 100%);
+            color: #2c3e50;
+            padding: 40px 20px;
+            line-height: 1.9;
+        }
+        .container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 50px 45px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+        }
+        h1 {
+            color: #2980b9;
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 35px;
+            padding-bottom: 18px;
+            border-bottom: 3px solid #2980b9;
+            letter-spacing: 1px;
+        }
+        h2 {
+            color: #27ae60;
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 22px;
+            padding: 8px 16px;
+            background: #eafaf1;
+            border-left: 5px solid #27ae60;
+            border-radius: 6px;
+        }
+        h3 {
+            color: #e67e22;
+            font-size: 19px;
+            margin: 28px 0 16px 0;
+            padding-left: 10px;
+            border-left: 3px solid #e67e22;
+        }
+        p { margin: 14px 0; font-size: 16px; }
+        .formula-box {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 25px 20px;
+            margin: 22px 0;
+            text-align: center;
+            font-size: 17px;
+        }
+        .formula-box.highlight {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+        .step {
+            background: #e8f4fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 18px 0;
+            border-left: 4px solid #3498db;
+        }
+        .result {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .verify {
+            background: #eafaf1;
+            border: 2px solid #27ae60;
+            border-radius: 10px;
+            padding: 18px;
+            margin-top: 25px;
+            font-size: 17px;
+        }
+        .note {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px dashed #bdc3c7;
+            text-align: center;
+        }
+        strong.imp { color: #c0392b; }
+        ul.calc {
+            list-style: none;
+            padding-left: 20px;
+        }
+        ul.calc li {
+            margin: 8px 0;
+            padding: 6px 10px;
+            background: #f1f2f6;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>罗德里格斯公式：旋转向量 → 旋转矩阵</h1>
+
+        <p>给定旋转向量：$\theta\mathbf{u} = \dfrac{\pi}{4}(0,\,0,\,1)^{\mathsf{T}}$，即：</p>
+        <div class="formula-box highlight">
+            旋转角度：$\theta = \dfrac{\pi}{4}$（45°）<br>
+            旋转轴：$\mathbf{u} = (0,\,0,\,1)^{\mathsf{T}}$（已是单位向量，表示绕 Z 轴旋转）
+        </div>
+
+        <h2>一、罗德里格斯公式</h2>
+        <div class="formula-box">
+            $$R = I + \sin\theta \cdot K + (1 - \cos\theta) \cdot K^2$$
+        </div>
+        <p>其中 $K$ 是单位向量 $\mathbf{u} = (u_x, u_y, u_z)^{\mathsf{T}}$ 的<strong class="imp">反对称矩阵</strong>：</p>
+        <div class="formula-box">
+            $$K = \begin{bmatrix} 0 & -u_z & u_y \\ u_z & 0 & -u_x \\ -u_y & u_x & 0 \end{bmatrix}$$
+        </div>
+        <p>代入 $\mathbf{u} = (0, 0, 1)^{\mathsf{T}}$：</p>
+        <div class="formula-box highlight">
+            $$K = \begin{bmatrix} 0 & -1 & 0 \\ 1 & \;\;0 & 0 \\ 0 & \;\;0 & 0 \end{bmatrix}$$
+        </div>
+
+        <h2>二、详细计算步骤</h2>
+
+        <h3>Step 1：计算 $K^2$</h3>
+        <div class="step">
+            <p>$$K^2 = K \cdot K = \begin{bmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 0 \end{bmatrix} \begin{bmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 0 \end{bmatrix}$$</p>
+            <p>逐元素计算：</p>
+            <ul class="calc">
+                <li>$K^2_{11} = 0 \times 0 + (-1) \times 1 + 0 \times 0 = \mathbf{-1}$</li>
+                <li>$K^2_{12} = 0 \times (-1) + (-1) \times 0 + 0 \times 0 = \mathbf{0}$</li>
+                <li>$K^2_{21} = 1 \times 0 + 0 \times 1 + 0 \times 0 = \mathbf{0}$</li>
+                <li>$K^2_{22} = 1 \times (-1) + 0 \times 0 + 0 \times 0 = \mathbf{-1}$</li>
+                <li>第三行/列全为 0</li>
+            </ul>
+            <p class="result">$$K^2 = \begin{bmatrix} -1 & 0 & 0 \\ 0 & -1 & 0 \\ 0 & 0 & 0 \end{bmatrix}$$</p>
+        </div>
+
+        <h3>Step 2：计算三角函数值</h3>
+        <div class="step">
+            <ul class="calc">
+                <li>$\sin\dfrac{\pi}{4} = \dfrac{\sqrt{2}}{2} \approx \mathbf{0.7071}$</li>
+                <li>$\cos\dfrac{\pi}{4} = \dfrac{\sqrt{2}}{2} \approx \mathbf{0.7071}$</li>
+                <li>$1 - \cos\dfrac{\pi}{4} = 1 - \dfrac{\sqrt{2}}{2} \approx \mathbf{0.2929}$</li>
+            </ul>
+        </div>
+
+        <h3>Step 3：代入公式，逐项相加</h3>
+        <div class="step">
+            <p><strong class="imp">第一项（单位矩阵）：</strong></p>
+            <p>$$I = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$</p>
+
+            <p><strong class="imp">第二项（$\sin\theta \cdot K$）：</strong></p>
+            <p>$$\sin\theta \cdot K = \frac{\sqrt{2}}{2} \begin{bmatrix} 0 & -1 & 0 \\ 1 & 0 & 0 \\ 0 & 0 & 0 \end{bmatrix} = \begin{bmatrix} 0 & -\frac{\sqrt{2}}{2} & 0 \\[6pt] \frac{\sqrt{2}}{2} & 0 & 0 \\[6pt] 0 & 0 & 0 \end{bmatrix}$$</p>
+
+            <p><strong class="imp">第三项（$(1-\cos\theta) \cdot K^2$）：</strong></p>
+            <p>$$(1 - \cos\theta) \cdot K^2 = \left(1 - \frac{\sqrt{2}}{2}\right) \begin{bmatrix} -1 & 0 & 0 \\ 0 & -1 & 0 \\ 0 & 0 & 0 \end{bmatrix} = \begin{bmatrix} -1 + \frac{\sqrt{2}}{2} & 0 & 0 \\[6pt] 0 & -1 + \frac{\sqrt{2}}{2} & 0 \\[6pt] 0 & 0 & 0 \end{bmatrix}$$</p>
+        </div>
+
+        <h3>Step 4：合并三个矩阵</h3>
+        <div class="step">
+            <p>$$R = \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix} + \begin{bmatrix} 0 & -\frac{\sqrt{2}}{2} & 0 \\[6pt] \frac{\sqrt{2}}{2} & 0 & 0 \\[6pt] 0 & 0 & 0 \end{bmatrix} + \begin{bmatrix} -1 + \frac{\sqrt{2}}{2} & 0 & 0 \\[6pt] 0 & -1 + \frac{\sqrt{2}}{2} & 0 \\[6pt] 0 & 0 & 0 \end{bmatrix}$$</p>
+            <p>逐元素相加：</p>
+            <ul class="calc">
+                <li>$R_{11} = 1 + 0 + \left(-1 + \frac{\sqrt{2}}{2}\right) = \mathbf{\frac{\sqrt{2}}{2}}$</li>
+                <li>$R_{12} = 0 + \left(-\frac{\sqrt{2}}{2}\right) + 0 = \mathbf{-\frac{\sqrt{2}}{2}}$</li>
+                <li>$R_{21} = 0 + \frac{\sqrt{2}}{2} + 0 = \mathbf{\frac{\sqrt{2}}{2}}$</li>
+                <li>$R_{22} = 1 + 0 + \left(-1 + \frac{\sqrt{2}}{2}\right) = \mathbf{\frac{\sqrt{2}}{2}}$</li>
+                <li>$R_{33} = 1 + 0 + 0 = \mathbf{1}$</li>
+                <li>其余元素均为 <strong>0</strong></li>
+            </ul>
+        </div>
+
+        <h2>三、最终结果</h2>
+        <div class="formula-box highlight">
+            <p class="result" style="font-size: 20px;">$$R = \begin{bmatrix} \frac{\sqrt{2}}{2} & -\frac{\sqrt{2}}{2} & 0 \\[8pt] \frac{\sqrt{2}}{2} & \frac{\sqrt{2}}{2} & 0 \\[8pt] 0 & 0 & 1 \end{bmatrix} \approx \begin{bmatrix} 0.7071 & -0.7071 & 0 \\ 0.7071 & \;\;0.7071 & 0 \\ 0 & 0 & 1 \end{bmatrix}$$</p>
+        </div>
+
+        <div class="verify">
+            <strong>✓ 验证：</strong>这正是绕 <strong>Z 轴旋转 45°</strong> 的标准旋转矩阵 $R_z\!\left(\dfrac{\pi}{4}\right)$，与预期完全一致！
+        </div>
+
+        <div class="note">
+            💡 物理意义：旋转向量 $(\theta, \mathbf{u})$ 表示绕单位轴 $\mathbf{u}$ 旋转 $\theta$ 角度，罗德里格斯公式将其转换为等价的 3×3 旋转矩阵。
+        </div>
+    </div>
+</body>
+</html>
