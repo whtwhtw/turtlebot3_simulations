@@ -232,9 +232,27 @@
         $$(\mathbf{a}^{\wedge})^4 = -(\mathbf{a}^{\wedge})^2$$
     </div>
     <p><strong>证明概要：</strong></p>
+    <p>对任意向量 $\mathbf{x} \in \mathbb{R}^3$，考虑 $(\mathbf{a}^{\wedge})^2$ 作用在其上的结果：</p>
     <div class="formula">
-        $$(\mathbf{a}^{\wedge})^2 = \mathbf{a}^{\wedge}\mathbf{a}^{\wedge} = \mathbf{a}(\mathbf{a}^{\wedge}\cdot) = \mathbf{a}(\mathbf{a}^\top \cdot) - (\mathbf{a}^\top \mathbf{a})I = \mathbf{a}\mathbf{a}^\top - I$$
-        <p>（利用了向量叉积恒等式 $\mathbf{a} \times (\mathbf{a} \times \mathbf{x}) = \mathbf{a}(\mathbf{a}^\top \mathbf{x}) - (\mathbf{a}^\top \mathbf{a})\mathbf{x}$）</p>
+        $$\begin{aligned}
+        (\mathbf{a}^{\wedge})^2 \mathbf{x}
+        &= \mathbf{a}^{\wedge}(\mathbf{a}^{\wedge} \mathbf{x}) \\
+        &= \mathbf{a} \times (\mathbf{a} \times \mathbf{x}) \quad &\text{（反对称矩阵等价于叉积）} \\
+        &= \mathbf{a}(\mathbf{a}^\top \mathbf{x}) - (\mathbf{a}^\top \mathbf{a})\mathbf{x} \quad &\text{（向量三重积公式）} \\
+        &= (\mathbf{a}\mathbf{a}^\top)\mathbf{x} - \|\mathbf{a}\|^2 \mathbf{x} \quad &\text{（外积与模长）} \\
+        &= (\mathbf{a}\mathbf{a}^\top - \|\mathbf{a}\|^2 I)\mathbf{x}
+        \end{aligned}$$
+    </div>
+    <p>由于该等式对任意 $\mathbf{x}$ 都成立，去掉 $\mathbf{x}$ 得到矩阵等式：</p>
+    <div class="formula">
+        $$(\mathbf{a}^{\wedge})^2 = \mathbf{a}\mathbf{a}^\top - \|\mathbf{a}\|^2 I$$
+    </div>
+    <p>当 $\mathbf{a}$ 为单位向量时（$\|\mathbf{a}\| = 1$），简化为：</p>
+    <div class="formula">
+        $$(\mathbf{a}^{\wedge})^2 = \mathbf{a}\mathbf{a}^\top - I$$
+    </div>
+    <div class="note">
+        文献中有时会使用紧凑记法 $\mathbf{a}(\mathbf{a}^{\wedge}\cdot)$，其中 $\cdot$ 表示"等待输入的向量"。这种写法将 $(\mathbf{a}^{\wedge})^2$ 视为一个线性算子：先做叉积 $\mathbf{a}\times(\cdot)$，再做叉积 $\mathbf{a}\times(\mathbf{a}\times(\cdot))$。利用三重积公式展开后，$\cdot$ 的位置被替换为 $\mathbf{a}^\top(\cdot)$（点积）和 $I(\cdot)$（恒等映射）。为便于理解，建议始终将省略的向量 $\mathbf{x}$ 显式写出。
     </div>
 
     <p><strong>性质 3：</strong>幂的循环模式（对单位向量 $\mathbf{a}$）：</p>
