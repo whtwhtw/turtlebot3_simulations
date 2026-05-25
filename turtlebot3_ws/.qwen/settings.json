@@ -17,7 +17,11 @@
       "Bash(curl *)",
       "Bash(find *)",
       "Bash(ls *)",
-      "Bash(python3 *)"
+      "Bash(python3 *)",
+      "Bash(sleep *)",
+      "Read(//root/turtlebot3_ws/src/turtlebot3_gazebo/launch/**)",
+      "Bash(cp *)",
+      "Bash(timeout *)"
     ]
   },
   "$version": 3

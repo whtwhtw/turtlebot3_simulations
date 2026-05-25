@@ -56,8 +56,6 @@ def generate_launch_description():
             '-z', '0.01'
         ],
         output='screen',
-        respawn=True,
-        respawn_delay=2,
     )
 
     bridge_params = os.path.join(

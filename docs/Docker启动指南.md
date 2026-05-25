@@ -393,6 +393,253 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 ./turtlebot3_simulations.sh teleop             # 新开终端，控制小车移动建图
 ```
 
+#### 键盘控制 SLAM 建图详细指南
+
+本章节介绍如何使用键盘手动控制 TurtleBot3，配合 slam_toolbox 进行实时建图。
+
+##### 系统架构
+
+```
+键盘输入 → teleop_twiststamped_keyboard → /cmd_vel (TwistStamped) → ros_gz_bridge → Gazebo DiffDrive
+                                                                    ↓
+                                                            TurtleBot3 运动
+                                                                    ↓
+joint_states / scan / odom / tf → ros_gz_bridge → slam_toolbox → /map (OccupancyGrid) → rviz2
+```
+
+##### 启动步骤（4 个节点）
+
+> **提示**: 以下每一步都可以在新终端中使用 `./turtlebot3_simulations.sh` 快捷命令启动，无需手动进入容器执行 `ros2 launch`。
+
+**第一步：启动 Gazebo 仿真世界**
+
+```bash
+./turtlebot3_simulations.sh turtlebot3_world   # 带障碍物场景
+# 或
+./turtlebot3_simulations.sh empty_world        # 空世界
+# 或
+./turtlebot3_simulations.sh turtlebot3_house   # 室内房屋场景
+```
+
+> 如需在容器内手动启动，可执行：
+> ```bash
+> ./turtlebot3_simulations.sh shell
+> source /root/turtlebot3_ws/install/setup.bash
+> export TURTLEBOT3_MODEL=burger
+> ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+> ```
+
+**启动内容：**
+- Gazebo Sim 服务器（gzserver）
+- Gazebo 客户端 GUI（gzclient）
+- robot_state_publisher
+- ros_gz_bridge（Gazebo ↔ ROS2 消息桥接）
+- spawn_turtlebot3（机器人模型生成）
+
+**发布/订阅的 Topic：**
+| Topic | 类型 | 方向 |
+|-------|------|------|
+| /clock | rosgraph_msgs/msg/Clock | GZ → ROS |
+| /joint_states | sensor_msgs/msg/JointState | GZ → ROS |
+| /odom | nav_msgs/msg/Odometry | GZ → ROS |
+| /tf | tf2_msgs/msg/TFMessage | GZ → ROS |
+| /scan | sensor_msgs/msg/LaserScan | GZ → ROS |
+| /imu | sensor_msgs/msg/Imu | GZ → ROS |
+| /cmd_vel | geometry_msgs/msg/TwistStamped | ROS → GZ |
+
+**第二步：启动 RViz2 可视化**
+
+新开终端：
+```bash
+./turtlebot3_simulations.sh rviz_slam
+```
+
+> 如需在容器内手动启动，可执行：
+> ```bash
+> ./turtlebot3_simulations.sh shell
+> source /root/turtlebot3_ws/install/setup.bash
+> ros2 launch turtlebot3_bringup rviz2.launch.py
+> ```
+
+**功能：** 实时显示激光雷达扫描、里程计、TF 树和 SLAM 构建的地图。
+
+**第三步：启动 SLAM Toolbox**
+
+新开终端：
+```bash
+./turtlebot3_simulations.sh slam_toolbox
+```
+
+> 如需在容器内手动启动，可执行：
+> ```bash
+> ./turtlebot3_simulations.sh shell
+> source /root/turtlebot3_ws/install/setup.bash
+> ros2 launch slam_toolbox online_sync_launch.py
+> ```
+
+**功能：** 实时接收激光雷达和里程计数据，构建 2D 栅格地图。
+
+**节点名称：** `/slam_toolbox`
+
+**订阅的 Topic：**
+| Topic | 类型 | 用途 |
+|-------|------|------|
+| /scan | sensor_msgs/msg/LaserScan | 激光雷达数据 |
+| /tf | tf2_msgs/msg/TFMessage | 坐标变换 |
+| /clock | rosgraph_msgs/msg/Clock | 仿真时间 |
+
+**发布的 Topic：**
+| Topic | 类型 | 用途 |
+|-------|------|------|
+| /map | nav_msgs/msg/OccupancyGrid | 构建的地图 |
+| /map_metadata | nav_msgs/msg/MapMetaData | 地图元数据 |
+| /slam_toolbox/feedback | slam_toolbox/msg/Feedback | SLAM 状态反馈 |
+
+**第四步：启动键盘控制**
+
+新开终端：
+```bash
+./turtlebot3_simulations.sh teleop_slam
+```
+
+> 如需在容器内手动启动，可执行：
+> ```bash
+> ./turtlebot3_simulations.sh shell
+> source /root/turtlebot3_ws/install/setup.bash
+> ros2 run turtlebot3_teleop teleop_twiststamped_keyboard
+> ```
+
+**功能：** 读取键盘输入，发布 TwistStamped 速度指令到 `/cmd_vel`。
+
+**节点名称：** `/teleop_twiststamped_keyboard`
+
+##### 键盘控制方法
+
+**布局说明**
+
+采用与 `teleop_twist_keyboard` 相同的直观控制方式：
+
+```
+移动方向控制：
+   u    i    o
+   j    k    l
+   m    ,    .
+
+全向移动（按住 Shift）：
+   U    I    O
+   J    K    L
+   M    <    >
+
+Z轴升降：
+   t : 上升 (+z)
+   b : 下降 (-z)
+
+速度调节：
+   q/z : 同时增减线速度和角速度 ±10%
+   w/x : 只增减线速度 ±10%
+   e/c : 只增减角速度 ±10%
+
+其他：
+   任意非方向键 : 停止
+   CTRL-C : 退出
+```
+
+**按键含义**
+
+| 按键 | 线性速度 X | 角速度 Z | 运动方向 |
+|------|-----------|---------|---------|
+| `i` | + | 0 | 前进 |
+| `,` | - | 0 | 后退 |
+| `j` | 0 | + | 左转 |
+| `l` | 0 | - | 右转 |
+| `u` | + | + | 前进+左转 |
+| `o` | + | - | 前进+右转 |
+| `m` | - | - | 后退+右转 |
+| `.` | - | + | 后退+左转 |
+| `k` | 0 | 0 | 停止 |
+
+**速度调节说明**
+
+- 初始速度：线性 0.5 m/s，角速度 1.0 rad/s
+- `w` 键每次增加线速度 10%
+- `x` 键每次减少线速度 10%
+- `e` 键每次增加角速度 10%
+- `c` 键每次减少角速度 10%
+- `q` / `z` 同时调整两者
+
+##### 建图操作建议
+
+1. **启动顺序**：严格按照上述 1→2→3→4 的顺序启动节点
+2. **初始建图**：原地旋转 360° 建立初始地图
+3. **探索环境**：使用 `i` 前进、`j`/`l` 转向，逐步探索整个环境
+4. **避免过快**：建图时建议保持较低速度，使用 `x`/`c` 降低速度
+5. **回环检测**：尽量回到已探索过的区域，帮助 slam_toolbox 进行回环检测
+6. **保存地图**：
+
+```bash
+# 方法一：使用服务调用
+ros2 service call /slam_toolbox/save_map slam_toolbox/srv/SaveMap "{name: {data: '/path/to/map'}}"
+
+# 方法二：使用 slam_toolbox 插件
+ros2 run slam_toolbox map_saver_cli --map /path/to/map
+```
+
+##### 验证 Topic 数据流
+
+建图过程中可以使用以下命令验证数据流：
+
+```bash
+# 查看所有节点
+ros2 node list
+
+# 查看 /cmd_vel 是否有消息发布
+ros2 topic hz /cmd_vel
+
+# 查看 /cmd_vel 消息类型和内容
+ros2 topic echo /cmd_vel
+
+# 查看激光雷达数据
+ros2 topic echo /scan
+
+# 查看地图
+ros2 topic echo /map
+
+# 查看 TF 树
+ros2 run tf2_tools view_frames
+```
+
+##### 常见问题
+
+**键盘无法控制小车**
+
+**原因：** `teleop_twist_keyboard` 发布的是 `Twist` 类型，而 ros_gz_bridge 订阅的是 `TwistStamped`，类型不匹配。
+
+**解决：** 使用本项目提供的 `teleop_twiststamped_keyboard` 节点：
+
+```bash
+ros2 run turtlebot3_teleop teleop_twiststamped_keyboard
+```
+
+**地图不更新**
+
+- 检查 `/scan` topic 是否有数据：`ros2 topic hz /scan`
+- 检查 slam_toolbox 节点是否正常运行：`ros2 node info /slam_toolbox`
+- 确认 `use_sim_time` 参数一致
+
+**RViz 中地图显示异常**
+
+- 确认 Fixed Frame 设置为 `map`
+- 检查 TF 树是否完整：`map` → `odom` → `base_footprint` → `base_scan`
+
+##### 停止顺序
+
+完成建图后，按以下顺序停止节点（反向）：
+
+1. 停止键盘控制（Ctrl+C）
+2. 停止 SLAM Toolbox
+3. 停止 RViz2
+4. 停止 Gazebo
+
 #### 自动建图模式
 
 ```bash
@@ -470,15 +717,162 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 ./turtlebot3_simulations.sh turtlebot3_drive   # 自动避障演示
 ```
 
+#### 碰撞安全防护（防止撞障碍物失控）
+
+**问题背景：** 键盘控制小车时，如果不小心撞到障碍物，由于物理引擎碰撞响应与持续的速度指令冲突，小车会出现抖动、旋转或"失控"现象。
+
+**解决方案：** 启动碰撞安全节点，实时监测激光雷达数据，当检测到前方障碍物距离过近时自动发送停止指令。
+
+##### 快速使用
+
+```bash
+# 方式 1: 默认参数启动（安全距离 0.15m，检测角度 ±30°）
+./turtlebot3_simulations.sh collision_safety
+
+# 方式 2: 保守参数启动（安全距离 0.25m，检测角度 ±45°，推荐新手使用）
+./turtlebot3_simulations.sh collision_safety_safe
+
+# 方式 3: 自定义参数启动（安全距离 0.20m，检测角度 ±40°）
+./turtlebot3_simulations.sh collision_safety 0.20 40.0
+
+# 停止碰撞安全节点
+./turtlebot3_simulations.sh collision_safety_off
+```
+
+##### 完整使用示例
+
+**场景 1: 键盘控制 + 碰撞保护（推荐）**
+
+```bash
+# 终端 1: 启动 Gazebo 仿真
+./turtlebot3_simulations.sh turtlebot3_world
+
+# 终端 2: 启动碰撞安全节点（默认参数）
+./turtlebot3_simulations.sh collision_safety
+
+# 终端 3: 启动键盘控制
+./turtlebot3_simulations.sh teleop
+```
+
+**场景 2: SLAM 建图 + 碰撞保护**
+
+```bash
+# 终端 1: 启动仿真
+./turtlebot3_simulations.sh turtlebot3_world
+
+# 终端 2: 启动 RViz
+./turtlebot3_simulations.sh rviz_slam
+
+# 终端 3: 启动 SLAM Toolbox
+./turtlebot3_simulations.sh slam_toolbox
+
+# 终端 4: 启动碰撞安全节点（保守参数）
+./turtlebot3_simulations.sh collision_safety_safe
+
+# 终端 5: 启动键盘控制建图
+./turtlebot3_simulations.sh teleop_slam
+```
+
+**场景 3: DQN 训练 + 额外安全层**
+
+```bash
+# 终端 1: 启动 DQN 训练
+./turtlebot3_simulations.sh dqn_train_1
+
+# 终端 2: 启动碰撞安全节点（防止训练过程中频繁碰撞损坏模型）
+./turtlebot3_simulations.sh collision_safety 0.20 30.0
+```
+
+##### 系统架构
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                    碰撞安全防护架构                            │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│  键盘控制终端                                                 │
+│  ┌─────────────────┐                                        │
+│  │ teleop_keyboard │ ── 发布 /cmd_vel (TwistStamped) ──┐    │
+│  └─────────────────┘                                    │    │
+│                                                         ↓    │
+│  碰撞安全节点                                         ┌─────────────┐
+│  ┌──────────────────┐    检测距离    │  ros_gz_bridge  │
+│  │ collision_safety │ ←─────────────→ │                 │
+│  │                  │   /scan        └─────────────┘
+```
+
+##### 参数配置说明
+
+| 参数 | 默认值 | 说明 | 推荐值 |
+|------|--------|------|--------|
+| `safety_distance` | 0.15m | 安全距离阈值，低于此距离触发紧急停止 | 新手: 0.25m<br>熟练: 0.15m |
+| `front_angle_range` | 30.0° | 前方检测角度范围（正前方 ± 角度） | 开阔环境: 20°<br>复杂环境: 45° |
+| `enable_logging` | true | 是否启用日志输出 | 调试: true<br>生产: false |
+| `continuous_stop` | true | 紧急停止状态下是否持续发布停止指令 | 推荐: true |
+
+**参数调整建议：**
+
+| 场景 | safety_distance | front_angle_range | 说明 |
+|------|----------------|-------------------|------|
+| 空旷环境快速建图 | 0.10m | 20° | 减少误触发，提高建图效率 |
+| 标准障碍物环境 | 0.15m | 30° | 默认配置，平衡安全与效率 |
+| 复杂密集障碍物 | 0.25m | 45° | 更早触发停止，保护小车 |
+| 新手学习阶段 | 0.30m | 60° | 最大安全裕度，避免碰撞 |
+
+##### 工作流程
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    碰撞检测工作流程                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  1. 节点启动                                                 │
+│     • 订阅 /scan 话题（激光雷达数据）                         │
+│     • 准备发布 /cmd_vel（速度指令）                           │
+│     • 输出初始化信息（安全距离、检测角度）                     │
+│                                                             │
+│  2. 实时监控（循环执行）                                      │
+│     • 接收 LaserScan 消息                                    │
+│     • 提取前方 ±front_angle_range 范围内的距离数据            │
+│     • 计算最小距离 min_distance                               │
+│                                                             │
+│  3. 碰撞判断                                                 │
+│     ├─ min_distance < safety_distance                        │
+│     │   → 触发紧急停止                                        │
+│     │   → 发布零速度指令到 /cmd_vel                           │
+│     │   → 覆盖键盘控制的速度指令                              │
+│     │   → 打印警告日志                                        │
+│     │                                                        │
+│     ├─ safety_distance <= min_distance < warning_distance    │
+│     │   → 打印警告信息（不触发停止）                           │
+│     │   → 如之前在紧急停止状态，解除停止                       │
+│     │                                                        │
+│     └─ min_distance >= warning_distance                      │
+│         → 安全状态，正常监控                                   │
+│         → 如之前在紧急停止状态，打印恢复日志                    │
+│                                                             │
+│  4. 停止指令发布                                             │
+│     • 使用 TwistStamped 消息类型（兼容 ROS2 Jazzy）           │
+│     • 设置 linear.x = 0.0, angular.z = 0.0                   │
+│     • 根据 continuous_stop 参数决定发布频率                   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
 **辅助工具详细说明：**
 
 | 命令 | 功能描述 | 依赖节点/包 | 使用场景 | 注意事项 |
 |------|----------|------------|----------|----------|
 | `rviz` | 启动 RViz2 可视化工具，加载预配置的 RViz 布局文件，显示机器人状态、传感器数据、地图等 | `rviz2`（ROS2 可视化工具）<br>`turtlebot3_gazebo`（RViz 配置文件） | • 实时查看 LaserScan 点云数据 | • 观察 TF 坐标变换树 | • 监控地图构建进度 | • 调试导航路径规划 | 需先启动仿真或建图节点，否则 RViz 无数据可显示 |
-| `teleop` | 启动键盘控制节点（`turtlebot3_teleop`），将 `WASD` 和箭头键转换为 `/cmd_vel` **Twist** 速度指令发送给机器人 | `turtlebot3_teleop`（TurtleBot3 官方包） | • 手动控制小车移动 | • 建图时人工探索环境 | • 测试控制响应 | **需在新终端中运行**，焦点需在终端窗口内；发布 `Twist` 类型，兼容大多数节点 |
+| `rviz_slam` | 启动 SLAM 建图专用 RViz2，使用 `turtlebot3_bringup rviz2.launch.py`，预配置 SLAM 相关显示 | `rviz2`（ROS2 可视化工具）<br>`turtlebot3_bringup`（RViz 启动文件） | • SLAM 建图时实时显示地图 | • 查看激光雷达和里程计数据 | • 监控 TF 树 | 需先启动 Gazebo 和 SLAM 节点 |
+| `teleop` | 启动键盘控制节点（`turtlebot3_teleop`），将 `WASD` 和箭头键转换为 `/cmd_vel` **TwistStamped** 速度指令发送给机器人 | `turtlebot3_teleop`（TurtleBot3 官方包） | • 手动控制小车移动 | • 建图时人工探索环境 | • 测试控制响应 | **需在新终端中运行**，焦点需在终端窗口内；发布 `TwistStamped` 类型（参数 `stamped:=True`） |
 | `teleop_twist` | 启动键盘控制节点（`teleop_twist_keyboard`），将键盘输入转换为 `/cmd_vel` **TwistStamped** 速度指令。使用小键盘 `u/i/o/j/k/l` 布局 | `teleop_twist_keyboard`（ROS2 Jazzy 自带） | • 手动控制小车移动 | • 建图时人工探索环境 | • 与 `ros_gz_bridge` 等需要 `TwistStamped` 的节点配合 | **需在新终端中运行**；发布 `TwistStamped` 类型；如其他节点使用 `Twist`，可加参数 `-p stamped:=False` |
+| `teleop_slam` | 启动 SLAM 建图专用键盘控制（`turtlebot3_teleop teleop_twiststamped_keyboard`），发布 `TwistStamped` 类型，uio/jkl 布局 | `turtlebot3_teleop`（TurtleBot3 官方包） | • SLAM 建图时精细控制小车 | • 需要速度调节功能 | • 与 ros_gz_bridge 的 TwistStamped 订阅兼容 | **需在新终端中运行**；专为 SLAM 建图设计；与 `teleop_twist` 使用不同的底层实现 |
 | `respawn` | 在 Gazebo reset 或小车卡住后，重新生成小车到初始位置（默认坐标：x=-2.0, y=-0.5） | `turtlebot3_gazebo/spawn_turtlebot3.launch.py` | • Gazebo 重置后恢复小车位置 | • 小车陷入障碍物 | • 测试重新开始 | 会杀掉当前 teleop 进程，需重新启动键盘控制 |
 | `turtlebot3_drive` | 启动自动避障演示节点，小车基于 LaserScan 数据自主移动，检测到障碍物时自动转向 | `turtlebot3_node/turtlebot3_drive`（自动避障节点） | • 演示自主导航能力 | • 无需键盘控制的自动探索 | • 验证传感器数据 | 避障策略较简单，仅基于距离阈值，复杂环境可能碰撞 |
+| `collision_safety` | **启动碰撞检测与安全停止节点**，实时监测 `/scan` 数据，当障碍物距离 < 安全阈值时自动发送停止指令到 `/cmd_vel` | `turtlebot3_teleop/collision_safety`（新增安全节点） | • 键盘控制时防止碰撞障碍物 | • SLAM 建图时保护小车安全 | • DQN 训练时的额外安全层 | **需在新终端中运行**；与键盘控制节点同时运行；可自定义安全距离和检测角度参数 |
+| `collision_safety_safe` | 使用保守参数启动碰撞安全节点（安全距离 0.25m，检测角度 ±45°） | 同上 | • 新手推荐配置 | • 复杂障碍物环境 | • 需要更大安全裕度的场景 | 更保守的参数，更早触发停止 |
+| `collision_safety_off` | 停止碰撞安全节点 | - | • 临时关闭安全防护 | • 测试碰撞行为 | • 调试物理引擎 | 停止后不再有自动保护 |
 
 **键盘控制键位说明：**
 
@@ -513,6 +907,28 @@ w/x      : 仅增加/减少线速度
 e/c      : 仅增加/减少角速度
 其他键   : 退出控制节点
 ```
+
+`teleop_slam`（turtlebot3_teleop teleop_twiststamped_keyboard，小键盘布局）：
+
+```
+   u    i    o
+   j    k    l
+   m    ,    .
+
+I        : 前进
+J        : 左转
+L        : 右转
+,        : 后退
+K        : 停止运动
+
+t/b      : 上升/下降（z 轴）
+q/z      : 增加/减少最大速度
+w/x      : 仅增加/减少线速度
+e/c      : 仅增加/减少角速度
+其他键   : 退出控制节点
+```
+
+> **注意**：`teleop_slam` 与 `teleop_twist` 键位布局相同，但使用不同的底层包实现（`turtlebot3_teleop` vs `teleop_twist_keyboard`）。
 
 ### 环境配置
 
@@ -601,6 +1017,45 @@ git clone https://github.com/ROBOTIS-GIT/hls_lfcd_lds_driver.git
 4. 创建符号链接并编译项目
 
 ## 六、常见问题
+
+### Q: 键盘控制小车撞到障碍物后失控（抖动/旋转/卡住）
+
+**A**: 这是由于物理引擎碰撞响应与持续的速度指令冲突导致的。推荐使用碰撞安全节点：
+
+```bash
+# 在新终端启动碰撞安全节点（与键盘控制同时运行）
+./turtlebot3_simulations.sh collision_safety        # 默认参数
+# 或
+./turtlebot3_simulations.sh collision_safety_safe   # 保守参数（推荐新手）
+```
+
+**工作原理：**
+- 实时订阅 `/scan` 激光雷达数据
+- 检测前方 ±30° 范围内的障碍物距离
+- 当距离 < 0.15m（默认）时，自动发送停止指令到 `/cmd_vel`
+- 覆盖键盘控制的速度指令，防止持续撞击
+- 距离恢复安全后，自动解除停止状态
+
+**如果已经失控，如何恢复正常：**
+
+| 场景 | 操作 | 效果 |
+|------|------|------|
+| 轻微碰撞，小车卡住 | 在键盘控制终端按 `k` 键（停止） | 停止速度指令，物理引擎会恢复 |
+| 严重碰撞，小车翻转 | `./turtlebot3_simulations.sh respawn` | 重新生成小车到初始位置 |
+| 小车陷入障碍物 | 在 Gazebo GUI 中右键小车 → Reset | 重置小车物理状态 |
+| 完全失控，Gazebo 崩溃 | Ctrl+C 停止仿真 → 重新启动 | 完全重启仿真环境 |
+
+**参数调整：**
+```bash
+# 自定义安全距离和检测角度
+./turtlebot3_simulations.sh collision_safety 0.20 40.0
+# 安全距离 0.20m，检测前方 ±40° 范围
+
+# 停止碰撞安全节点
+./turtlebot3_simulations.sh collision_safety_off
+```
+
+**替代方案（不推荐）：** 修改 `model.sdf` 中的车轮摩擦系数（从 100000.0 降低到 1.0），但会影响正常行驶手感。
 
 ### Q: Gazebo 黑屏或无法显示
 
@@ -811,6 +1266,239 @@ services:
     volumes:
       - ..:/workspace
     command: sleep infinity
+```
+
+---
+
+## 九、碰撞安全节点详细文档
+
+> 本节提供碰撞安全节点的完整技术文档，包括技术实现、日志示例、验证方法和高级用法。
+
+### 9.1 技术实现
+
+**节点名称：** `/collision_safety`
+
+**节点类型：** Python ROS2 节点
+
+**源码位置：** `turtlebot3_ws/src/turtlebot3/turtlebot3/turtlebot3_teleop/turtlebot3_teleop/script/collision_safety.py`
+
+**Launch 文件：** `turtlebot3_ws/src/turtlebot3/turtlebot3/turtlebot3_bringup/launch/collision_safety.launch.py`
+
+**消息接口：**
+
+| 接口 | 类型 | 方向 | 说明 |
+|------|------|------|------|
+| `/scan` | `sensor_msgs/msg/LaserScan` | 订阅 | 激光雷达数据（360° 扫描） |
+| `/cmd_vel` | `geometry_msgs/msg/TwistStamped` | 发布 | 速度指令（紧急停止时发布零速度） |
+
+**核心算法：**
+
+```python
+1. 订阅 /scan 话题，接收 LaserScan 消息
+2. 提取前方 ±front_angle_range 范围内的距离数据
+3. 过滤无效值（0 或 inf）
+4. 计算最小距离 min_distance
+5. 碰撞判断：
+   - min_distance < safety_distance → 触发紧急停止
+   - safety_distance <= min_distance < warning_distance → 打印警告
+   - min_distance >= warning_distance → 安全状态
+6. 触发停止时，发布 TwistStamped 零速度指令到 /cmd_vel
+```
+
+### 9.2 日志输出示例
+
+**正常启动日志：**
+
+```
+[INFO] [collision_safety]: ============================================================
+[INFO] [collision_safety]: 碰撞安全节点已启动 (Collision Safety Node)
+[INFO] [collision_safety]:   安全距离阈值: 0.15 m
+[INFO] [collision_safety]:   警告距离阈值: 0.22 m
+[INFO] [collision_safety]:   前方检测角度: ±30°
+[INFO] [collision_safety]:   消息类型: TwistStamped
+[INFO] [collision_safety]:   状态: 监控中 (Monitoring)
+[INFO] [collision_safety]: ============================================================
+```
+
+**触发紧急停止日志：**
+
+```
+[WARN] [collision_safety]: ⚠️  碰撞风险！前方距离: 0.12m < 0.15m (安全阈值) - 触发紧急停止!
+[INFO] [collision_safety]: ✅ 安全距离恢复: 0.25m > 0.15m - 解除紧急停止，可继续控制
+```
+
+**接近障碍物警告日志：**
+
+```
+[INFO] [collision_safety]: ⚡ 接近障碍物: 0.18m (警告阈值: 0.22m)
+```
+
+### 9.3 验证方法
+
+**验证节点是否正常运行：**
+
+```bash
+# 方法 1: 查看节点列表
+docker exec turtlebot3-sim ros2 node list | grep collision
+# 应输出: /collision_safety
+
+# 方法 2: 查看节点信息
+docker exec turtlebot3-sim ros2 node info /collision_safety
+# 应显示订阅和发布的 topic
+
+# 方法 3: 查看节点日志
+docker exec turtlebot3-sim ros2 topic echo /rosout | grep collision_safety
+
+# 方法 4: 验证 /cmd_vel 是否有停止指令发布
+docker exec turtlebot3-sim ros2 topic hz /cmd_vel
+# 触发停止时应看到消息发布频率
+```
+
+**验证数据流：**
+
+```bash
+# 查看激光雷达数据
+docker exec turtlebot3-sim ros2 topic echo /scan --once
+
+# 查看速度指令
+docker exec turtlebot3-sim ros2 topic echo /cmd_vel
+
+# 查看所有活跃节点
+docker exec turtlebot3-sim ros2 node list
+```
+
+### 9.4 常见问题
+
+**Q1: 碰撞安全节点启动后立即停止小车**
+
+**原因：** 安全距离设置过大，或激光雷达数据异常。
+
+**解决：**
+```bash
+# 检查激光雷达数据是否正常
+docker exec turtlebot3-sim ros2 topic echo /scan --once
+
+# 增大安全距离阈值
+./turtlebot3_simulations.sh collision_safety 0.30 20.0
+
+# 或暂时关闭节点
+./turtlebot3_simulations.sh collision_safety_off
+```
+
+**Q2: 节点未触发停止（碰撞无反应）**
+
+**原因：** /scan 话题无数据，或节点未正确订阅。
+
+**解决：**
+```bash
+# 检查 /scan 是否有数据
+docker exec turtlebot3-sim ros2 topic hz /scan
+
+# 检查节点是否订阅 /scan
+docker exec turtlebot3-sim ros2 node info /collision_safety
+
+# 重新启动节点
+./turtlebot3_simulations.sh collision_safety_off
+./turtlebot3_simulations.sh collision_safety
+```
+
+**Q3: 节点频繁触发停止（过于敏感）**
+
+**原因：** 安全距离过小，或检测角度过大。
+
+**解决：**
+```bash
+# 减小检测角度，增大安全距离
+./turtlebot3_simulations.sh collision_safety 0.20 15.0
+
+# 或使用保守配置
+./turtlebot3_simulations.sh collision_safety_safe
+```
+
+**Q4: 与键盘控制冲突（小车无法移动）**
+
+**原因：** 多个节点同时发布 /cmd_vel，优先级问题。
+
+**解决：**
+```bash
+# 确保碰撞安全节点使用 continuous_stop:=false
+docker exec turtlebot3-sim ros2 launch turtlebot3_bringup collision_safety.launch.py continuous_stop:=false
+
+# 或仅在有碰撞风险时手动启动节点
+./turtlebot3_simulations.sh collision_safety_off  # 正常控制时关闭
+./turtlebot3_simulations.sh collision_safety      # 需要保护时启动
+```
+
+### 9.5 高级用法
+
+**自定义 Launch 文件：**
+
+创建自定义 launch 文件 `my_collision_safety.launch.py`：
+
+```python
+from launch import LaunchDescription
+from launch_ros.actions import Node
+
+def generate_launch_description():
+    return LaunchDescription([
+        Node(
+            package='turtlebot3_teleop',
+            executable='collision_safety',
+            name='collision_safety',
+            output='screen',
+            parameters=[{
+                'safety_distance': 0.20,
+                'front_angle_range': 40.0,
+                'enable_logging': True,
+                'continuous_stop': True,
+            }],
+            remappings=[
+                ('/scan', '/custom_scan'),  # 如需使用自定义话题
+            ],
+        ),
+    ])
+```
+
+**与 Nav2 集成：**
+
+在 Navigation2 中使用碰撞安全节点作为额外安全层：
+
+```bash
+# 启动 Nav2 导航
+ros2 launch turtlebot3_navigation2 navigation2.launch.py
+
+# 同时启动碰撞安全节点
+./turtlebot3_simulations.sh collision_safety 0.25 30.0
+```
+
+**DQN 训练安全层：**
+
+在 DQN 训练时添加碰撞保护，防止训练过程中频繁碰撞损坏模型：
+
+```bash
+# 终端 1: 启动 DQN 训练
+./turtlebot3_simulations.sh dqn_train_1
+
+# 终端 2: 启动碰撞安全节点（保守参数）
+./turtlebot3_simulations.sh collision_safety 0.20 30.0
+```
+
+**多机器人场景：**
+
+在多机器人仿真中，为每个机器人启动独立的碰撞安全节点：
+
+```bash
+# 机器人 1
+docker exec turtlebot3-sim ros2 run turtlebot3_teleop collision_safety \
+  --ros-args -p safety_distance:=0.15 \
+  --remap /scan:=/robot1/scan \
+  --remap /cmd_vel:=/robot1/cmd_vel
+
+# 机器人 2
+docker exec turtlebot3-sim ros2 run turtlebot3_teleop collision_safety \
+  --ros-args -p safety_distance:=0.15 \
+  --remap /scan:=/robot2/scan \
+  --remap /cmd_vel:=/robot2/cmd_vel
 ```
 
 ---

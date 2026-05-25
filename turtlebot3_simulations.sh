@@ -198,6 +198,27 @@ launch_teleop_twist() {
     exec_in_container "ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=True"
 }
 
+# SLAM 建图专用 RViz（使用 turtlebot3_bringup rviz2.launch.py）
+launch_rviz_slam() {
+    log_info "启动 RViz2 for SLAM (turtlebot3_bringup)..."
+    exec_in_container "ros2 launch turtlebot3_bringup rviz2.launch.py"
+}
+
+# SLAM 建图专用键盘控制（turtlebot3_teleop teleop_twiststamped_keyboard）
+launch_teleop_slam() {
+    log_info "启动键盘控制 for SLAM (turtlebot3_teleop teleop_twiststamped_keyboard, uio/jkl 布局)..."
+    exec_in_container "ros2 run turtlebot3_teleop teleop_twiststamped_keyboard"
+}
+
+# 碰撞安全节点
+launch_collision_safety() {
+    local safety_distance=${1:-0.15}
+    local front_angle=${2:-30.0}
+    log_info "启动碰撞安全节点 (Collision Safety Node)..."
+    log_info "  安全距离: ${safety_distance}m, 检测角度: ±${front_angle}°"
+    exec_in_container "ros2 launch turtlebot3_bringup collision_safety.launch.py safety_distance:=${safety_distance} front_angle_range:=${front_angle}"
+}
+
 # 重新生成小车
 respawn_robot() {
     log_info "重新生成小车并恢复控制..."
@@ -421,6 +442,13 @@ SLAM 建图:
   slam_toolbox       启动 slam_toolbox SLAM 建图 + RViz
   auto_slam          自动 SLAM 建图 (Cartographer + 自动避障，无需键盘)
   save_map [name]    保存当前地图 (默认名: map)
+  rviz_slam          启动 RViz2 for SLAM 建图 (turtlebot3_bringup)
+  teleop_slam        启动键盘控制 for SLAM 建图 (teleop_twiststamped_keyboard)
+
+安全防护:
+  collision_safety   启动碰撞检测与安全停止节点 (防止撞障碍物失控)
+  collision_safety_safe   使用保守参数启动 (安全距离 0.25m, 角度 ±45°)
+  collision_safety_off    停止碰撞安全节点
 
 辅助工具:
   rviz               启动 RViz2 可视化
@@ -538,6 +566,22 @@ case "$1" in
         ;;
     auto_slam)
         launch_auto_slam
+        ;;
+    rviz_slam)
+        launch_rviz_slam
+        ;;
+    teleop_slam)
+        launch_teleop_slam
+        ;;
+    collision_safety)
+        launch_collision_safety "${2:-0.15}" "${3:-30.0}"
+        ;;
+    collision_safety_safe)
+        launch_collision_safety "0.25" "45.0"
+        ;;
+    collision_safety_off)
+        log_info "停止碰撞安全节点..."
+        docker exec $CONTAINER_NAME bash -c "pkill -f 'collision_safety' 2>/dev/null || echo '碰撞安全节点未运行'"
         ;;
     save_map)
         save_map "${2:-map}"
