@@ -1,0 +1,48 @@
+graph TB
+    subgraph slam_toolbox架构
+        A[输入 /scan + /odom + /tf]
+
+        subgraph 预处理
+            B[Scan 过滤 min/max laser range]
+            C[Scan 降采样 throttle_scans]
+            D[Scan 重心化 use_scan_barycenter]
+        end
+
+        subgraph 前端扫描匹配
+            E[Scan-to-Scan 匹配 相邻帧 ICP]
+            F[Scan-to-Submap 匹配 精细配准]
+            G[Ceres Solver 非线性优化]
+        end
+
+        subgraph 后端图优化
+            H[位姿图 Pose Graph]
+            I[回环检测 Loop Closure]
+            J[全局优化 g2o/Ceres]
+        end
+
+        subgraph 输出
+            K[/map OccupancyGrid]
+            L[/tf odom map]
+            M[地图序列化]
+        end
+
+        A --> B --> C --> D --> E --> F --> G --> H --> I --> J --> K
+        G --> H
+        I --> J
+        J --> L
+        J --> M
+    end
+
+    style A fill:#e3f2fd
+    style B fill:#fff3e0
+    style C fill:#fff3e0
+    style D fill:#fff3e0
+    style E fill:#f3e5f5
+    style F fill:#f3e5f5
+    style G fill:#f3e5f5
+    style H fill:#e8f5e9
+    style I fill:#e8f5e9
+    style J fill:#e8f5e9
+    style K fill:#ffcdd2
+    style L fill:#ffcdd2
+    style M fill:#ffcdd2

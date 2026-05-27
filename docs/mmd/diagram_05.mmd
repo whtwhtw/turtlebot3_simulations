@@ -1,0 +1,13 @@
+stateDiagram
+    [*] --> Unconfigured
+    Unconfigured --> Configuring : configure()
+    Configuring --> Inactive : on_configure() 成功
+    Inactive --> Activating : activate()
+    Activating --> Active : on_activate() 成功
+    Active --> Deactivating : deactivate()
+    Deactivating --> Inactive : on_deactivate() 成功
+    Inactive --> Cleaningup : cleanup()
+    Cleaningup --> Unconfigured : on_cleanup() 成功
+    Active --> Error : 错误
+    Inactive --> Error : 错误
+    Error --> Unconfigured : 重新配置

@@ -198,6 +198,24 @@ launch_teleop_twist() {
     exec_in_container "ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -p stamped:=True"
 }
 
+# 键盘控制（自研 teleop_twist_keyboard，小键盘布局，发布 TwistStamped 类型）
+launch_teleop_twist_custom() {
+    log_info "启动键盘控制 (turtlebot3_teleop/teleop_twist_keyboard, uio/jkl 布局, TwistStamped 类型)..."
+    exec_in_container "ros2 run turtlebot3_teleop teleop_twist_keyboard"
+}
+
+# RViz2 可视化（turtlebot3_bringup）
+launch_rviz2_bringup() {
+    log_info "启动 RViz2 (turtlebot3_bringup rviz2.launch.py)..."
+    exec_in_container "ros2 launch turtlebot3_bringup rviz2.launch.py"
+}
+
+# SLAM Toolbox 在线同步建图
+launch_slam_toolbox_sync() {
+    log_info "启动 slam_toolbox 在线同步建图 (online_sync_launch.py)..."
+    exec_in_container "ros2 launch slam_toolbox online_sync_launch.py use_sim_time:=true"
+}
+
 # 重新生成小车
 respawn_robot() {
     log_info "重新生成小车并恢复控制..."
@@ -424,11 +442,16 @@ SLAM 建图:
 
 辅助工具:
   rviz               启动 RViz2 可视化
+  rviz2_bringup      启动 RViz2 (turtlebot3_bringup)
   gazebo             启动 Gazebo 客户端
   teleop             启动键盘控制节点 (turtlebot3_teleop, WASD 布局)
   teleop_twist       启动键盘控制节点 (teleop_twist_keyboard, TwistStamped 类型)
+  teleop_twist_custom 启动键盘控制节点 (自研 teleop_twist_keyboard, TwistStamped 类型)
   respawn            重新生成小车 (Gazebo reset 后使用)
   turtlebot3_drive   启动自动避障演示
+
+SLAM Toolbox 建图:
+  slam_toolbox_sync  启动 slam_toolbox 在线同步建图
 
 环境配置:
   model <name>       设置机器人模型 (burger|waffle|waffle_pi)
@@ -514,6 +537,9 @@ case "$1" in
     rviz)
         launch_rviz
         ;;
+    rviz2_bringup)
+        launch_rviz2_bringup
+        ;;
     gazebo)
         log_info "启动 Gazebo 客户端..."
         docker exec -it $CONTAINER_NAME bash -c "gzclient"
@@ -523,6 +549,12 @@ case "$1" in
         ;;
     teleop_twist)
         launch_teleop_twist
+        ;;
+    teleop_twist_custom)
+        launch_teleop_twist_custom
+        ;;
+    slam_toolbox_sync)
+        launch_slam_toolbox_sync
         ;;
     respawn)
         respawn_robot

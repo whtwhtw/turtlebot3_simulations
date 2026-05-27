@@ -1,0 +1,37 @@
+graph TB
+    subgraph Gazebo仿真
+        GW[Gazebo World]
+        GS[传感器 LDS IMU]
+    end
+    subgraph 桥接层
+        GB[ros_gz_bridge]
+    end
+    subgraph ROS2节点
+        ST[slam_toolbox]
+        RSP[robot_state_publisher]
+        TW[teleop_keyboard]
+        RV[rviz2]
+    end
+    subgraph 核心话题
+        T1[/scan/]
+        T2[/odom/]
+        T3[/cmd_vel/]
+        T4[/tf/]
+        T5[/map/]
+    end
+    GS --> GB
+    GB --> T1
+    GB --> T2
+    GB --> T4
+    T1 --> ST
+    T2 --> ST
+    T4 --> ST
+    TW --> T3
+    T3 --> GB
+    ST --> T4
+    ST --> T5
+    T1 --> RV
+    T5 --> RV
+    style ST fill:#ff5722,color:#fff
+    style GB fill:#e1f5fe
+    style RV fill:#9c27b0,color:#fff

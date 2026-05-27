@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    subgraph \u53d1\u5e03\u8005\n        P1[ros_gz_bridge]\n        P2[teleop_twist_keyboard]\n        P3[slam_toolbox]\n        P4[robot_state_publisher]\n    end\n\n    subgraph \u8bdd\u9898\n        T1[/scan/]\n        T2[/odom/]\n        T3[/cmd_vel/]\n        T4[/tf/]\n        T5[/map/]\n        T6[/tf_static/]\n    end\n\n    subgraph \u8ba2\u9605\u8005\n        S1[slam_toolbox]\n        S2[rviz2]\n        S3[ros_gz_bridge]\n        S4[teleop_twist_keyboard]\n    end\n\n    P1 --> T1\n    P1 --> T2\n    P1 --> T4\n    P2 --> T3\n    P3 --> T4\n    P3 --> T5\n    P4 --> T6\n\n    T1 --> S1\n    T1 --> S2\n    T1 --> S4\n    T2 --> S1\n    T2 --> S2\n    T3 --> S3\n    T4 --> S1\n    T4 --> S2\n    T5 --> S1\n    T5 --> S2\n    T6 --> S1\n    T6 --> S2\n\n    style P3 fill:#ff5722,color:#fff\n    style S1 fill:#ff5722,color:#fff\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

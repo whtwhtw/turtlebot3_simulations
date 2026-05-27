@@ -1,0 +1,227 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#e1f5fe',
+    'primaryTextColor': '#1a237e',
+    'primaryBorderColor': '#1565c0',
+    'lineColor': '#42a5f5',
+    'secondaryColor': '#f3e5f5',
+    'tertiaryColor': '#e8f5e9'
+  }
+}}%%
+
+graph TB
+  %% ============================================================
+  %% 节点定义
+  %% ============================================================
+
+  subgraph GZ["🟦 Gazebo 仿真环境"]
+    GZ_SIM["Gazebo Sim<br/>(gz sim)"]
+    GZ_BRIDGE["ros_gz_bridge<br/>parameter_bridge"]
+    GZ_IMG_BRIDGE["ros_gz_image<br/>image_bridge"]
+    GZ_ROBOT_STATE["robot_state_publisher"]
+    GZ_SPAWN["ros_gz_sim create<br/>(spawn robot)"]
+  end
+
+  subgraph TB3["🟩 TurtleBot3 节点"]
+    TB3_DRIVE["turtlebot3_drive_node<br/>(自动避障/探索)"]
+    TB3_FAKE["turtlebot3_fake_node<br/>(仿真里程计)"]
+    TB3_TELEOP["turtlebot3_teleop_keyboard<br/>(键盘遥控)"]
+  end
+
+  subgraph SLAM["🟨 SLAM Toolbox 节点"]
+    SLAM_NODE["async_slam_toolbox_node<br/>(slam_toolbox)"]
+  end
+
+  subgraph DQN["🟪 DQN 强化学习"]
+    DQN_AGENT["dqn_agent<br/>(DQN 训练/推理)"]
+    DQN_ENV["dqn_environment<br/>(RL 环境)"]
+    DQN_GAZEBO["dqn_gazebo<br/>(Gazebo 目标管理)"]
+    DQN_TEST["dqn_test<br/>(推理测试)"]
+    DQN_ACTION_GRAPH["action_graph<br/>(PyQt5 Q 值可视化)"]
+    DQN_RESULT_GRAPH["result_graph<br/>(PyQtGraph 训练曲线)"]
+  end
+
+  subgraph RVIZ["🟧 可视化"]
+    RVIZ2["rviz2"]
+  end
+
+  subgraph TOPICS["📡 ROS Topics"]
+    T_SCAN["/scan<br/>sensor_msgs/LaserScan"]
+    T_ODOM["/odom<br/>nav_msgs/Odometry"]
+    T_CMD_VEL["/cmd_vel<br/>geometry_msgs/TwistStamped"]
+    T_JOINT["/joint_states<br/>sensor_msgs/JointState"]
+    T_TF["/tf, /tf_static<br/>tf2_msgs/TFMessage"]
+    T_CLOCK["/clock<br/>rosgraph_msgs/Clock"]
+    T_MAP["/map<br/>nav_msgs/OccupancyGrid"]
+    T_MAP_META["/map_metadata<br/>nav_msgs/MapMetaData"]
+    T_POSE["pose<br/>geometry_msgs/PoseWithCovarianceStamped"]
+    T_POSE_GRAPH["slam_toolbox/pose_graph<br/>slam_toolbox/msg/PoseGraph"]
+    T_NEW_NODE["slam_toolbox/new_node_event<br/>slam_toolbox/msg/NewNodeEvent"]
+    T_LOOP["slam_toolbox/loop_closure_event<br/>slam_toolbox/msg/LoopClosureEvent"]
+    T_CAMERA["/camera/image_raw<br/>sensor_msgs/Image"]
+    T_CAMERA_INFO["/camera/camera_info<br/>sensor_msgs/CameraInfo"]
+    T_IMU["/imu<br/>sensor_msgs/Imu"]
+  end
+
+  subgraph TOPICS_DQN["📡 DQN Topics"]
+    T_GET_ACTION["/get_action<br/>std_msgs/Float32MultiArray"]
+    T_RESULT["result<br/>std_msgs/Float32MultiArray"]
+  end
+
+  subgraph SERVICES["🔧 Services"]
+    S_DYNAMIC_MAP["slam_toolbox/dynamic_map<br/>nav_msgs/GetMap"]
+    S_SERIALIZE["slam_toolbox/serialize_map<br/>slam_toolbox/SerializePoseGraph"]
+    S_DESERIALIZE["slam_toolbox/deserialize_map<br/>slam_toolbox/DeserializePoseGraph"]
+    S_PAUSE["slam_toolbox/pause_new_measurements<br/>slam_toolbox/Pause"]
+    S_RESET["slam_toolbox/reset<br/>slam_toolbox/Reset"]
+  end
+
+  subgraph SERVICES_DQN["🔧 DQN Services"]
+    S_RL_AGENT["rl_agent_interface<br/>turtlebot3_msgs/Dqn"]
+    S_MAKE_ENV["make_environment<br/>std_srvs/Empty"]
+    S_RESET_ENV["reset_environment<br/>turtlebot3_msgs/Dqn"]
+    S_INIT_ENV["initialize_env<br/>turtlebot3_msgs/Goal"]
+    S_TASK_SUCCEED["task_succeed<br/>turtlebot3_msgs/Goal"]
+    S_TASK_FAILED["task_failed<br/>turtlebot3_msgs/Goal"]
+  end
+
+  %% ============================================================
+  %% Gazebo 内部流程
+  %% ============================================================
+
+  GZ_SIM -->|"发布传感器数据"| GZ_BRIDGE
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_SCAN
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_ODOM
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_JOINT
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_TF
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_CLOCK
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_IMU
+  GZ_BRIDGE -->|"桥接 GZ → ROS"| T_CAMERA_INFO
+  GZ_IMG_BRIDGE -->|"桥接图像 GZ → ROS"| T_CAMERA
+
+  GZ_SIM -->|"生成机器人"| GZ_SPAWN
+  GZ_SPAWN -->|"启动桥接"| GZ_BRIDGE
+  GZ_SPAWN -->|"启动图像桥接"| GZ_IMG_BRIDGE
+
+  GZ_ROBOT_STATE -->|"发布 TF 变换"| T_TF
+
+  %% ============================================================
+  %% TurtleBot3 驱动节点流程
+  %% ============================================================
+
+  T_SCAN -->|"激光雷达数据<br/>传感器数据订阅<br/>SensorDataQoS"| TB3_DRIVE
+  T_ODOM -->|"里程计反馈<br/>获取机器人位姿"| TB3_DRIVE
+  TB3_DRIVE -->|"速度指令<br/>避障/探索决策"| T_CMD_VEL
+  T_CMD_VEL -->|"发送到 Gazebo<br/>控制机器人运动"| GZ_BRIDGE
+
+  %% ============================================================
+  %% SLAM Toolbox 流程
+  %% ============================================================
+
+  T_SCAN -->|"激光雷达数据<br/>scan_topic: /scan"| SLAM_NODE
+  T_TF -->|"TF 变换<br/>map→odom→base_footprint"| SLAM_NODE
+  T_ODOM -->|"里程计数据<br/>odom_frame"| SLAM_NODE
+
+  SLAM_NODE -->|"占用栅格地图<br/>分辨率 0.05m/px"| T_MAP
+  SLAM_NODE -->|"地图元数据<br/>尺寸/分辨率"| T_MAP_META
+  SLAM_NODE -->|"校正后的机器人位姿"| T_POSE
+  SLAM_NODE -->|"姿态图<br/>节点+边+协方差"| T_POSE_GRAPH
+  SLAM_NODE -->|"新节点事件"| T_NEW_NODE
+  SLAM_NODE -->|"回环检测事件"| T_LOOP
+  SLAM_NODE -->|"发布 map→odom TF"| T_TF
+
+  %% ============================================================
+  %% RViz 可视化流程
+  %% ============================================================
+
+  T_MAP -->|"显示地图"| RVIZ2
+  T_MAP_META -->|"地图元数据"| RVIZ2
+  T_POSE -->|"显示位姿"| RVIZ2
+  T_POSE_GRAPH -->|"显示姿态图"| RVIZ2
+  T_SCAN -->|"显示激光雷达点云"| RVIZ2
+  T_TF -->|"显示坐标变换树"| RVIZ2
+  T_CAMERA -->|"显示相机图像"| RVIZ2
+
+  %% ============================================================
+  %% 键盘遥控流程
+  %% ============================================================
+
+  TB3_TELEOP -->|"键盘速度指令"| T_CMD_VEL
+
+  %% ============================================================
+  %% Fake Node 流程 (独立于 Gazebo 时使用)
+  %% ============================================================
+
+  T_CMD_VEL -.->|"速度指令<br/>Twist/TwistStamped"| TB3_FAKE
+  TB3_FAKE -->|"仿真里程计<br/>运动学积分"| T_ODOM
+  TB3_FAKE -->|"关节状态<br/>左右轮位置/速度"| T_JOINT
+  TB3_FAKE -->|"TF 变换<br/>odom→base_footprint"| T_TF
+
+  %% ============================================================
+  %% Service 调用
+  %% ============================================================
+
+  RVIZ2 -.->|"获取地图"| S_DYNAMIC_MAP
+  RVIZ2 -.->|"保存地图"| S_SERIALIZE
+  RVIZ2 -.->|"加载地图"| S_DESERIALIZE
+  RVIZ2 -.->|"暂停/恢复"| S_PAUSE
+  RVIZ2 -.->|"重置地图"| S_RESET
+
+  S_DYNAMIC_MAP -.->|"提供地图服务"| SLAM_NODE
+  S_SERIALIZE -.->|"提供序列化服务"| SLAM_NODE
+  S_DESERIALIZE -.->|"提供反序列化服务"| SLAM_NODE
+  S_PAUSE -.->|"提供暂停服务"| SLAM_NODE
+  S_RESET -.->|"提供重置服务"| SLAM_NODE
+
+  %% ============================================================
+  %% DQN 强化学习流程
+  %% ============================================================
+
+  DQN_AGENT -.->|"action=0-4, init"| S_RL_AGENT
+  S_RL_AGENT -.->|"state[26], reward, done"| DQN_AGENT
+  DQN_ENV -->|"发布状态/奖励/完成"| S_RL_AGENT
+
+  T_SCAN -->|"激光雷达数据"| DQN_ENV
+  T_ODOM -->|"里程计: 目标距离/角度"| DQN_ENV
+  DQN_ENV -->|"速度指令<br/>线速度0.2 + 角速度动作"| T_CMD_VEL
+
+  DQN_AGENT -->|"训练/epsilon-greedy<br/>Q-Network"| DQN_ENV
+  DQN_TEST -.->|"推理模式<br/>加载模型"| DQN_ENV
+
+  DQN_ENV -.->|"初始化环境"| S_MAKE_ENV
+  DQN_ENV -.->|"重置环境"| S_RESET_ENV
+
+  DQN_ENV -.->|"生成目标位置"| S_INIT_ENV
+  DQN_ENV -.->|"到达目标: 新目标"| S_TASK_SUCCEED
+  DQN_ENV -.->|"碰撞/超时: 重置"| S_TASK_FAILED
+
+  S_INIT_ENV -.->|"spawn/delete goal_box"| DQN_GAZEBO
+  S_TASK_SUCCEED -.->|"删除旧目标+新目标"| DQN_GAZEBO
+  S_TASK_FAILED -.->|"仿真重置+新目标"| DQN_GAZEBO
+
+  DQN_AGENT -->|"[action, score, reward]"| T_GET_ACTION
+  T_GET_ACTION -->|"实时 Q 值显示"| DQN_ACTION_GRAPH
+
+  DQN_AGENT -->|"[score, avg_max_q]"| T_RESULT
+  T_RESULT -->|"训练曲线显示"| DQN_RESULT_GRAPH
+
+  %% ============================================================
+  %% 样式定义
+  %% ============================================================
+
+  classDef gzClass fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+  classDef tb3Class fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+  classDef slamClass fill:#fff9c4,stroke:#f9a825,stroke-width:2px
+  classDef dqnClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+  classDef rvizClass fill:#ffe0b2,stroke:#ef6c00,stroke-width:2px
+  classDef topicClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:1px,stroke-dasharray: 5 5
+  classDef serviceClass fill:#e0f2f1,stroke:#00695c,stroke-width:1px,stroke-dasharray: 5 5
+
+  class GZ_SIM,GZ_BRIDGE,GZ_IMG_BRIDGE,GZ_ROBOT_STATE,GZ_SPAWN gzClass
+  class TB3_DRIVE,TB3_FAKE,TB3_TELEOP tb3Class
+  class SLAM_NODE slamClass
+  class DQN_AGENT,DQN_ENV,DQN_GAZEBO,DQN_TEST,DQN_ACTION_GRAPH,DQN_RESULT_GRAPH dqnClass
+  class RVIZ2 rvizClass
+  class T_SCAN,T_ODOM,T_CMD_VEL,T_JOINT,T_TF,T_CLOCK,T_MAP,T_MAP_META,T_POSE,T_POSE_GRAPH,T_NEW_NODE,T_LOOP,T_CAMERA,T_CAMERA_INFO,T_IMU,T_GET_ACTION,T_RESULT topicClass
+  class S_DYNAMIC_MAP,S_SERIALIZE,S_DESERIALIZE,S_PAUSE,S_RESET,S_RL_AGENT,S_MAKE_ENV,S_RESET_ENV,S_INIT_ENV,S_TASK_SUCCEED,S_TASK_FAILED serviceClass

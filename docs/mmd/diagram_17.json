@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    A[SLAM \u5efa\u56fe] --> B[\u5730\u56fe\u4fdd\u5b58]\n    B --> C[Navigation2 \u52a0\u8f7d\u5730\u56fe]\n    C --> D[\u8bbe\u7f6e\u8d77\u70b9\u548c\u76ee\u6807\u70b9]\n    D --> E[\u8def\u5f84\u89c4\u5212]\n    E --> F[\u8fd0\u52a8\u63a7\u5236]\n    F --> G[\u907f\u969c\u6267\u884c]\n    \n    style A fill:#c8e6c9\n    style B fill:#c8e6c9\n    style C fill:#e3f2fd\n    style D fill:#e3f2fd\n    style E fill:#fff3e0\n    style F fill:#fff3e0\n    style G fill:#ffcdd2\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

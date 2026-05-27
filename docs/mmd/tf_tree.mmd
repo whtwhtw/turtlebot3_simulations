@@ -1,0 +1,11 @@
+graph LR
+    A[map] --> |"odom→map<br/>SLAM 修正"| B[odom]
+    B --> |"base_footprint→odom<br/>里程计推算"| C[base_footprint]
+    C --> |"base_link→base_footprint<br/>静态变换"| D[base_link]
+    D --> |"base_scan→base_link<br/>静态变换"| E[base_scan]
+    
+    style A fill:#e8f5e9
+    style B fill:#fff3e0
+    style C fill:#e3f2fd
+    style D fill:#e3f2fd
+    style E fill:#fce4ec

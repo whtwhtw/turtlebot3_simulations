@@ -1,0 +1,14 @@
+graph TB
+    subgraph ROS2通信原语
+        A[Topic 话题] --> |发布/订阅 单向流| B[(Publisher)]
+        A --> C[(Subscriber)]
+        D[Service 服务] --> |请求/响应 双向同步| E[Client]
+        D --> F[Server]
+        G[Action 动作] --> |目标/反馈/结果 长时间任务| H[Client]
+        G --> I[Server]
+        J[Parameter 参数] --> |配置读写 键值对| K[Node]
+    end
+    style A fill:#e1f5fe
+    style D fill:#f3e5f5
+    style G fill:#fff3e0
+    style J fill:#e8f5e9

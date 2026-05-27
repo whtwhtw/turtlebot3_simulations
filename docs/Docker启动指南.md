@@ -380,7 +380,105 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 
 ### SLAM 建图
 
-#### 手动建图模式
+#### SLAM Toolbox 建图
+
+本节介绍使用 `slam_toolbox` 进行在线同步建图的完整流程，由以下 4 个命令组成：
+
+**步骤 1：启动仿真场景**
+
+```bash
+./turtlebot3_simulations.sh turtlebot3_world
+```
+
+启动包含障碍物的 World 场景，为建图提供环境。
+
+**步骤 2：启动 RViz2 可视化**
+
+```bash
+./turtlebot3_simulations.sh rviz2_bringup
+```
+
+启动 `turtlebot3_bringup rviz2.launch.py`，加载预配置的 RViz 布局，实时查看机器人状态、传感器数据和建图进度。
+
+**步骤 3：启动 slam_toolbox 建图**
+
+```bash
+./turtlebot3_simulations.sh slam_toolbox_sync
+```
+
+启动 `slam_toolbox online_sync_launch.py`，使用在线同步模式进行 2D SLAM 建图。该模式同步处理传感器数据，构建并优化地图。
+
+**步骤 4：键盘控制机器人建图**
+
+```bash
+./turtlebot3_simulations.sh teleop_twist_custom
+```
+
+启动自研 `teleop_twist_keyboard` 节点，使用小键盘布局控制机器人移动，发布 `TwistStamped` 类型消息。键盘布局（与原版 `teleop_twist_keyboard` 一致）：
+
+```
+        u       i       o
+        j       k       l
+        m       ,       .
+
+i     : 前进
+,     : 后退
+j     : 左转
+l     : 右转
+k     : 停止
+u/o   : 对角线移动（前进 + 左转/右转）
+m/.   : 对角线移动（后退 + 左转/右转）
+space : 紧急停止
+```
+
+> 💡 **替代方案**：也可使用 `./turtlebot3_simulations.sh teleop`（WASD 布局）或 `./turtlebot3_simulations.sh teleop_twist`（原版 teleop_twist_keyboard）进行控制。
+
+**完整建图流程：**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  SLAM Toolbox 建图流程                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  终端 1: 启动仿真环境                                         │
+│  ./turtlebot3_simulations.sh turtlebot3_world               │
+│                                                             │
+│  终端 2: 启动 RViz2 可视化                                    │
+│  ./turtlebot3_simulations.sh rviz2_bringup                  │
+│                                                             │
+│  终端 3: 启动 slam_toolbox 建图                               │
+│  ./turtlebot3_simulations.sh slam_toolbox_sync              │
+│                                                             │
+│  终端 4: 键盘控制机器人                                       │
+│  ./turtlebot3_simulations.sh teleop_twist_custom            │
+│                                                             │
+│  观察 RViz 中的地图构建进度，建图完成后保存地图：               │
+│  ./turtlebot3_simulations.sh save_map [map_name]            │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**节点通信关系：**
+
+```
+turtlebot3_world (Gazebo)
+  ├── /scan (LaserScan)     ──→ slam_toolbox
+  ├── /odom (Odometry)      ──→ slam_toolbox
+  └── /cmd_vel (TwistStamped) ←── teleop_twist_keyboard
+
+slam_toolbox
+  ├── /map (OccupancyGrid)  ──→ rviz2
+  └── /tf (坐标变换)         ──→ rviz2
+```
+
+**建图完成后保存地图：**
+
+```bash
+./turtlebot3_simulations.sh save_map my_slam_map
+# 输出：maps/my_slam_map.png + maps/my_slam_map.yaml
+```
+
+#### 手动建图模式（其他方式）
 
 ```bash
 # 方式 1: Cartographer SLAM
@@ -464,8 +562,10 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 
 ```bash
 ./turtlebot3_simulations.sh rviz               # 启动 RViz2 可视化
+./turtlebot3_simulations.sh rviz2_bringup      # 启动 RViz2 (turtlebot3_bringup)
 ./turtlebot3_simulations.sh teleop             # 键盘控制节点 (turtlebot3_teleop, WASD 布局)
 ./turtlebot3_simulations.sh teleop_twist       # 键盘控制节点 (teleop_twist_keyboard, TwistStamped 类型)
+./turtlebot3_simulations.sh teleop_twist_custom # 键盘控制节点 (自研 teleop_twist_keyboard, TwistStamped 类型)
 ./turtlebot3_simulations.sh respawn            # 重新生成小车 (Gazebo reset 后使用)
 ./turtlebot3_simulations.sh turtlebot3_drive   # 自动避障演示
 ```
@@ -474,37 +574,39 @@ ros2 run turtlebot3_dqn dqn_agent --ros-args \
 
 | 命令 | 功能描述 | 依赖节点/包 | 使用场景 | 注意事项 |
 |------|----------|------------|----------|----------|
-| `rviz` | 启动 RViz2 可视化工具，加载预配置的 RViz 布局文件，显示机器人状态、传感器数据、地图等 | `rviz2`（ROS2 可视化工具）<br>`turtlebot3_gazebo`（RViz 配置文件） | • 实时查看 LaserScan 点云数据 | • 观察 TF 坐标变换树 | • 监控地图构建进度 | • 调试导航路径规划 | 需先启动仿真或建图节点，否则 RViz 无数据可显示 |
+| `rviz` | 启动 RViz2 可视化工具，加载 Gazebo 预配置的 RViz 布局文件 | `rviz2`（ROS2 可视化工具）<br>`turtlebot3_gazebo`（RViz 配置文件） | • 实时查看 LaserScan 点云数据 | • 观察 TF 坐标变换树 | • 监控地图构建进度 | • 调试导航路径规划 | 需先启动仿真或建图节点，否则 RViz 无数据可显示 |
+| `rviz2_bringup` | 启动 RViz2 可视化工具，加载 `turtlebot3_bringup` 预配置的布局文件（`model.rviz`） | `rviz2`（ROS2 可视化工具）<br>`turtlebot3_bringup`（启动包）<br>`turtlebot3_description`（RViz 配置文件） | • 实时查看机器人模型和状态 | • 配合 slam_toolbox 建图可视化 | • 查看传感器数据 | 需先启动仿真或建图节点，否则 RViz 无数据可显示 |
 | `teleop` | 启动键盘控制节点（`turtlebot3_teleop`），将 `WASD` 和箭头键转换为 `/cmd_vel` **Twist** 速度指令发送给机器人 | `turtlebot3_teleop`（TurtleBot3 官方包） | • 手动控制小车移动 | • 建图时人工探索环境 | • 测试控制响应 | **需在新终端中运行**，焦点需在终端窗口内；发布 `Twist` 类型，兼容大多数节点 |
-| `teleop_twist` | 启动键盘控制节点（`teleop_twist_keyboard`），将键盘输入转换为 `/cmd_vel` **TwistStamped** 速度指令。使用小键盘 `u/i/o/j/k/l` 布局 | `teleop_twist_keyboard`（ROS2 Jazzy 自带） | • 手动控制小车移动 | • 建图时人工探索环境 | • 与 `ros_gz_bridge` 等需要 `TwistStamped` 的节点配合 | **需在新终端中运行**；发布 `TwistStamped` 类型；如其他节点使用 `Twist`，可加参数 `-p stamped:=False` |
+| `teleop_twist` | 启动键盘控制节点（`teleop_twist_keyboard`），将键盘输入转换为 `/cmd_vel` **TwistStamped** 速度指令。使用小键盘 `u/i/o/j/k/l` 布局 | `teleop_twist_keyboard`（ROS2 Jazzy 自带） | • 手动控制小车移动 | • 建图时人工探索环境 | • 与 `ros_gz_bridge` 等需要 `TwistStamped` 的节点配合 | **需在新终端中运行**；发布 `TwistStamped` 类型 |
+| `teleop_twist_custom` | 启动自研键盘控制节点（`turtlebot3_teleop/teleop_twist_keyboard`），将键盘输入转换为 `/cmd_vel` **TwistStamped** 速度指令。使用小键盘 `u/i/o/j/k/l` 布局 | `turtlebot3_teleop`（本项目包） | • 手动控制小车移动 | • 建图时人工探索环境 | • 与 `slam_toolbox` 等需要 `TwistStamped` 的节点配合 | **需在新终端中运行**；发布 `TwistStamped` 类型；专为 TurtleBot3 优化速度限制 |
 | `respawn` | 在 Gazebo reset 或小车卡住后，重新生成小车到初始位置（默认坐标：x=-2.0, y=-0.5） | `turtlebot3_gazebo/spawn_turtlebot3.launch.py` | • Gazebo 重置后恢复小车位置 | • 小车陷入障碍物 | • 测试重新开始 | 会杀掉当前 teleop 进程，需重新启动键盘控制 |
 | `turtlebot3_drive` | 启动自动避障演示节点，小车基于 LaserScan 数据自主移动，检测到障碍物时自动转向 | `turtlebot3_node/turtlebot3_drive`（自动避障节点） | • 演示自主导航能力 | • 无需键盘控制的自动探索 | • 验证传感器数据 | 避障策略较简单，仅基于距离阈值，复杂环境可能碰撞 |
 
 **键盘控制键位说明：**
 
-`teleop`（turtlebot3_teleop，WASD 布局）：
+`teleop`（turtlebot3_teleop，WASD 布局，**递增速度**）：
 
 ```
         W
       A S D
         X
 
-W/A/S/D : 前进/左转/后退/右转
+W/A/S/D : 前进/左转/后退/右转（速度递增）
 X        : 停止运动
 其他键   : 退出控制节点
 ```
 
-`teleop_twist`（teleop_twist_keyboard，小键盘布局）：
+`teleop_twist`（原版 teleop_twist_keyboard，**递增速度**）：
 
 ```
    u    i    o
    j    k    l
    m    ,    .
 
-I        : 前进
-J        : 左转
-L        : 右转
-,        : 后退
+I        : 前进（每次按键增加线速度）
+J        : 左转（每次按键增加角速度）
+L        : 右转（每次按键减少角速度）
+,        : 后退（每次按键减少线速度）
 K        : 停止运动
 
 t/b      : 上升/下降（z 轴）
@@ -512,6 +614,27 @@ q/z      : 增加/减少最大速度
 w/x      : 仅增加/减少线速度
 e/c      : 仅增加/减少角速度
 其他键   : 退出控制节点
+```
+
+`teleop_twist_custom`（自研 teleop_twist_keyboard，**固定速度**）：
+
+```
+        u       i       o
+        j       k       l
+        m       ,       .
+
+I        : 前进（固定速度 0.5 m/s）
+,        : 后退（固定速度 0.5 m/s）
+J        : 左转（固定速度 1.0 rad/s）
+L        : 右转（固定速度 1.0 rad/s）
+K        : 停止运动
+U/O      : 对角线移动（前进 + 左转/右转）
+M/.      : 对角线移动（后退 + 左转/右转）
+space    : 紧急停止
+
+实际发布速度受限于机器人最大速度：
+  Burger: 线速度 0.22 m/s，角速度 2.84 rad/s
+  Waffle: 线速度 0.26 m/s，角速度 1.82 rad/s
 ```
 
 ### 环境配置

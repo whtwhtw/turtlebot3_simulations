@@ -1,0 +1,31 @@
+graph TB
+    subgraph Gazebo物理引擎
+        GZ[物理仿真]
+    end
+    subgraph 传感器数据流
+        GZ --> GB1[ros_gz_bridge]
+        GB1 --> SCAN[/scan/]
+        GB1 --> ODOM[/odom/]
+    end
+    subgraph 控制数据流
+        KB[teleop_keyboard] --> CMD[/cmd_vel/]
+        CMD --> GB2[ros_gz_bridge]
+        GB2 --> GZ
+    end
+    subgraph SLAM处理流
+        SCAN --> ST[slam_toolbox]
+        ODOM --> ST
+        TF[/tf/] --> ST
+        ST --> MAP[/map/]
+        ST --> TF
+    end
+    subgraph 可视化流
+        MAP --> RV[rviz2]
+        SCAN --> RV
+        ODOM --> RV
+        TF --> RV
+    end
+    style GZ fill:#e3f2fd
+    style ST fill:#ff5722,color:#fff
+    style KB fill:#2196f3,color:#fff
+    style RV fill:#9c27b0,color:#fff

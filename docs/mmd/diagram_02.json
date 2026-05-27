@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    subgraph Launch\u6587\u4ef6\n        A[turtlebot3_world.launch.py]\n    end\n    subgraph \u542f\u52a8\u7684\u8282\u70b9\n        B[Gazebo Server]\n        C[Gazebo Client]\n        D[robot_state_publisher]\n        E[spawn_turtlebot3]\n        F[ros_gz_bridge]\n    end\n    A -->|Include| B\n    A -->|Include| C\n    A -->|Include| D\n    A -->|Include| E\n    A -->|Include| F\n    style A fill:#ffeb3b\n    style B fill:#e3f2fd\n    style C fill:#e3f2fd\n    style D fill:#e3f2fd\n    style E fill:#e3f2fd\n    style F fill:#e3f2fd\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

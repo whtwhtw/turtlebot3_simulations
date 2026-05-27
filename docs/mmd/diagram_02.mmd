@@ -1,0 +1,22 @@
+graph LR
+    subgraph Launch文件
+        A[turtlebot3_world.launch.py]
+    end
+    subgraph 启动的节点
+        B[Gazebo Server]
+        C[Gazebo Client]
+        D[robot_state_publisher]
+        E[spawn_turtlebot3]
+        F[ros_gz_bridge]
+    end
+    A -->|Include| B
+    A -->|Include| C
+    A -->|Include| D
+    A -->|Include| E
+    A -->|Include| F
+    style A fill:#ffeb3b
+    style B fill:#e3f2fd
+    style C fill:#e3f2fd
+    style D fill:#e3f2fd
+    style E fill:#e3f2fd
+    style F fill:#e3f2fd

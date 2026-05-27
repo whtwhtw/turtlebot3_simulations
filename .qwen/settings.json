@@ -54,7 +54,14 @@
       "Bash(apt-cache *)",
       "Bash(git stash)",
       "Bash(git pull)",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(cli-anything-mermaid *)",
+      "Bash(then *)",
+      "Bash(fi)",
+      "Bash(xxd *)",
+      "Bash(cd *)",
+      "Bash(tail *)",
+      "Bash(git checkout *)"
     ]
   },
   "$version": 4

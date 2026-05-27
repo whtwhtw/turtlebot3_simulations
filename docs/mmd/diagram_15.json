@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    A[\u5f53\u524d\u626b\u63cf S_current] --> B[\u5728\u4f4d\u59ff\u56fe\u4e2d\u641c\u7d22\u90bb\u8fd1\u626b\u63cf loop_search_maximum_distance]\n    B --> C[\u7c97\u5339\u914d: \u5927\u89d2\u5ea6\u6b65\u957f coarse_angle_resolution = 0.0349rad]\n    C --> D{\u5339\u914d\u5f97\u5206 > 0.35?}\n    D --> |\u5426| E[\u56de\u73af\u68c0\u6d4b\u5931\u8d25]\n    D --> |\u662f| F[\u7cbe\u5339\u914d: \u5c0f\u89d2\u5ea6\u504f\u79fb fine_search_angle_offset = 0.00349rad]\n    F --> G{\u5339\u914d\u5f97\u5206 > 0.45 \u4e14 \u8fde\u7eed\u5339\u914d\u6570 > 10?}\n    G --> |\u5426| E\n    G --> |\u662f| H[\u6dfb\u52a0\u56de\u73af\u7ea6\u675f\u5230\u4f4d\u59ff\u56fe]\n    H --> I[\u5168\u5c40\u4f18\u5316: \u91cd\u65b0\u6c42\u89e3\u6240\u6709\u4f4d\u59ff]\n\n    style A fill:#e3f2fd\n    style E fill:#ffcdd2\n    style I fill:#c8e6c9\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

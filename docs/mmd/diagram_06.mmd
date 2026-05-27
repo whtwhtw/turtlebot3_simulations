@@ -1,0 +1,22 @@
+graph LR
+    subgraph Gazebo侧
+        A[Gazebo Scan 数据]
+        B[Gazebo Odometry]
+        C[Gazebo TF]
+    end
+
+    subgraph ros_gz_bridge
+        D[消息格式转换 gz.msgs ROS2 msg]
+        E[QoS 适配 Reliability / Durability]
+        F[时钟同步 Gazebo Time ROS Time]
+    end
+
+    subgraph ROS2侧
+        G[/scan LaserScan]
+        H[/odom Odometry]
+        I[/tf TFMessage]
+    end
+
+    A --> D --> G
+    B --> E --> H
+    C --> F --> I

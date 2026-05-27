@@ -1,0 +1,8 @@
+{
+  "code": "stateDiagram\n    [*] --> Unconfigured\n    Unconfigured --> Configuring : configure()\n    Configuring --> Inactive : on_configure() \u6210\u529f\n    Inactive --> Activating : activate()\n    Activating --> Active : on_activate() \u6210\u529f\n    Active --> Deactivating : deactivate()\n    Deactivating --> Inactive : on_deactivate() \u6210\u529f\n    Inactive --> Cleaningup : cleanup()\n    Cleaningup --> Unconfigured : on_cleanup() \u6210\u529f\n    Active --> Error : \u9519\u8bef\n    Inactive --> Error : \u9519\u8bef\n    Error --> Unconfigured : \u91cd\u65b0\u914d\u7f6e\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

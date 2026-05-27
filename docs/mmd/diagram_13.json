@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    subgraph \u95ee\u9898\u8f6e\u5f0f\u91cc\u7a0b\u8ba1\u6709\u7d2f\u79ef\u8bef\u5dee\n        A[\u8f6e\u5b50\u8f6c100\u5708] --> B[\u7406\u8bba\u4e0a\u8d70\u4e86 10m]\n        B --> C[\u5b9e\u9645\u53ea\u8d70\u4e86 9.8m \u6253\u6ed1/\u8f6e\u5f84\u8bef\u5dee]\n    end\n\n    subgraph SLAM\u7684\u4fee\u6b63\n        D[\u6fc0\u5149\u96f7\u8fbe\u5339\u914d] --> E[\u53d1\u73b0\u5b9e\u9645\u4f4d\u7f6e\u504f\u5dee 0.2m]\n        E --> F[\u53d1\u5e03 odom map \u4fee\u6b63\u53d8\u6362]\n    end\n\n    C --> D\n    F --> G[\u4fee\u6b63\u540e\u7684\u4f4d\u59ff: 10.0m]\n\n    style A fill:#ffcdd2\n    style B fill:#ffcdd2\n    style C fill:#ffcdd2\n    style D fill:#c8e6c9\n    style E fill:#c8e6c9\n    style F fill:#c8e6c9\n    style G fill:#c8e6c9\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

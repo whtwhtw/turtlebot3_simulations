@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    A[\u542f\u52a8\u6240\u6709\u8282\u70b9] --> B[\u7b49\u5f85SLAM\u6fc0\u6d3b]\n    B --> C[\u7f13\u6162\u5411\u524d\u79fb\u52a8]\n    C --> D[\u6cbf\u5899\u58c1\u7ed5\u884c]\n    D --> E[\u56de\u5230\u8d77\u70b9\u89e6\u53d1\u56de\u73af]\n    E --> F[\u68c0\u67e5\u5730\u56fe\u8d28\u91cf]\n    F --> G[\u4fdd\u5b58\u5730\u56fe]\n    style A fill:#e3f2fd\n    style B fill:#fff3e0\n    style C fill:#fff3e0\n    style D fill:#fff3e0\n    style E fill:#c8e6c9\n    style F fill:#c8e6c9\n    style G fill:#c8e6c9\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

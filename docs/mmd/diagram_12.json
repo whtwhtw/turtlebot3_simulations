@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    subgraph SLAM\u53d1\u5e03\u7684\u53d8\u6362\u52a8\u6001\n        A[map] --> |odom map SLAM \u4f4d\u59ff\u4fee\u6b63| B[odom]\n    end\n\n    subgraph \u91cc\u7a0b\u8ba1\u53d1\u5e03\u7684\u53d8\u6362\u52a8\u6001\n        B --> |base_footprint odom \u8f6e\u5f0f\u91cc\u7a0b\u8ba1\u63a8\u7b97| C[base_footprint]\n    end\n\n    subgraph robot_state_publisher\u53d1\u5e03\u7684\u53d8\u6362\u9759\u6001\n        C --> |z=0.01| D[base_link]\n        D --> |x=-0.081,z=-0.004| E[caster_back_link]\n        D --> |x=0.0,y=0.0,z=0.09| F[imu_link]\n        D --> |x=-0.032,y=0.0,z=0.0| G[base_scan]\n        D --> |y=0.05| H[wheel_left_link]\n        D --> |y=-0.05| I[wheel_right_link]\n    end\n\n    style A fill:#e8f5e9\n    style B fill:#fff3e0\n    style C fill:#e3f2fd\n    style D fill:#f3e5f5\n    style G fill:#ffcdd2\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

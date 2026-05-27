@@ -1,0 +1,54 @@
+sequenceDiagram
+    participant User as 👤 用户
+    participant Script as 📜 管理脚本
+    participant Docker as 🐳 Docker 容器
+    participant Gazebo as 🎮 Gazebo
+    participant Bridge as 🌉 ros_gz_bridge
+    participant RSP as 📡 robot_state_publisher
+    participant SLAM as 🧠 slam_toolbox
+    participant Teleop as ⌨️ teleop
+    participant RViz as 📺 rviz2
+
+    User->>Script: ./turtlebot3_simulations.sh start
+    Script->>Docker: docker run (创建容器)
+    Docker-->>User: 容器运行中
+
+    User->>Script: ./turtlebot3_simulations.sh build
+    Script->>Docker: colcon build --symlink-install
+    Docker-->>Script: 编译完成
+
+    User->>Script: ./turtlebot3_simulations.sh turtlebot3_world
+    Script->>Gazebo: gz_sim.launch.py (Server)
+    Script->>Gazebo: gz_sim.launch.py (Client/GUI)
+    Gazebo-->>Bridge: 加载 world 文件
+    
+    Script->>RSP: robot_state_publisher.launch.py
+    RSP->>Bridge: 发布 /robot_description
+    RSP->>Bridge: 发布 /tf_static (静态变换)
+    
+    Script->>Bridge: spawn_turtlebot3.launch.py
+    Bridge->>Gazebo: create 节点 (生成机器人)
+    Bridge->>Bridge: parameter_bridge (加载桥接配置)
+    
+    Gazebo-->>Bridge: 传感器数据 (Gazebo 原生格式)
+    Bridge-->>Bridge: 格式转换 (Gazebo → ROS2)
+    Bridge-->>SLAM: /scan (LaserScan)
+    Bridge-->>SLAM: /odom (Odometry)
+    Bridge-->>SLAM: /tf (TFMessage)
+    
+    Note over SLAM: Lifecycle: Unconfigured → Configuring → Inactive → Active
+    
+    User->>Script: ros2 launch slam_toolbox online_sync_launch.py
+    Script->>SLAM: sync_slam_toolbox_node (Lifecycle Node)
+    SLAM->>SLAM: TRANSITION_CONFIGURE
+    SLAM->>SLAM: TRANSITION_ACTIVATE
+    SLAM-->>SLAM: 开始建图
+    
+    User->>Teleop: 启动键盘控制
+    Teleop-->>Bridge: /cmd_vel (TwistStamped)
+    Bridge-->>Gazebo: 速度指令 → 机器人移动
+    
+    User->>RViz: 启动可视化
+    RViz-->>SLAM: 订阅 /map
+    RViz-->>Bridge: 订阅 /scan, /odom, /tf
+    RViz-->>User: 显示建图结果

@@ -1,0 +1,9 @@
+graph LR
+    A[URDF文件] --> RSP
+    B[/joint_states/] --> RSP
+    RSP[robot_state_publisher] --> C[/tf/]
+    RSP --> D[/tf_static/]
+    style A fill:#fff9c4
+    style B fill:#bbdefb
+    style C fill:#c8e6c9
+    style D fill:#c8e6c9

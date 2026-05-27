@@ -1,0 +1,47 @@
+graph TB
+    subgraph 发布者
+        P1[ros_gz_bridge]
+        P2[teleop_twist_keyboard]
+        P3[slam_toolbox]
+        P4[robot_state_publisher]
+    end
+
+    subgraph 话题
+        T1[/scan/]
+        T2[/odom/]
+        T3[/cmd_vel/]
+        T4[/tf/]
+        T5[/map/]
+        T6[/tf_static/]
+    end
+
+    subgraph 订阅者
+        S1[slam_toolbox]
+        S2[rviz2]
+        S3[ros_gz_bridge]
+        S4[teleop_twist_keyboard]
+    end
+
+    P1 --> T1
+    P1 --> T2
+    P1 --> T4
+    P2 --> T3
+    P3 --> T4
+    P3 --> T5
+    P4 --> T6
+
+    T1 --> S1
+    T1 --> S2
+    T1 --> S4
+    T2 --> S1
+    T2 --> S2
+    T3 --> S3
+    T4 --> S1
+    T4 --> S2
+    T5 --> S1
+    T5 --> S2
+    T6 --> S1
+    T6 --> S2
+
+    style P3 fill:#ff5722,color:#fff
+    style S1 fill:#ff5722,color:#fff

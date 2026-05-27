@@ -1,0 +1,15 @@
+graph LR
+    A[1. 启动所有节点] --> B[2. 等待 SLAM 激活]
+    B --> C[3. 缓慢向前移动]
+    C --> D[4. 沿墙壁顺时针/逆时针绕行]
+    D --> E[5. 回到起点 (触发回环)]
+    E --> F[6. 检查地图质量]
+    F --> G[7. 保存地图]
+
+    style A fill:#e3f2fd
+    style B fill:#fff3e0
+    style C fill:#fff3e0
+    style D fill:#fff3e0
+    style E fill:#c8e6c9
+    style F fill:#c8e6c9
+    style G fill:#c8e6c9

@@ -1,0 +1,14 @@
+graph TB
+    A[当前扫描 S_current] --> B[在位姿图中搜索邻近扫描 loop_search_maximum_distance]
+    B --> C[粗匹配: 大角度步长 coarse_angle_resolution = 0.0349rad]
+    C --> D{匹配得分 > 0.35?}
+    D --> |否| E[回环检测失败]
+    D --> |是| F[精匹配: 小角度偏移 fine_search_angle_offset = 0.00349rad]
+    F --> G{匹配得分 > 0.45 且 连续匹配数 > 10?}
+    G --> |否| E
+    G --> |是| H[添加回环约束到位姿图]
+    H --> I[全局优化: 重新求解所有位姿]
+
+    style A fill:#e3f2fd
+    style E fill:#ffcdd2
+    style I fill:#c8e6c9

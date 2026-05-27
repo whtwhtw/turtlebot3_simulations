@@ -1,0 +1,39 @@
+graph LR
+    subgraph "输入"
+        A[/scan + /odom + /tf/]
+    end
+    
+    subgraph "预处理"
+        B[过滤]
+        C[降采样]
+    end
+    
+    subgraph "前端匹配"
+        D[ICP 配准]
+        E[Ceres 优化]
+    end
+    
+    subgraph "后端优化"
+        F[位姿图]
+        G[回环检测]
+        H[全局优化]
+    end
+    
+    subgraph "输出"
+        I[/map/]
+        J[/tf odom→map/]
+    end
+    
+    A --> B --> C --> D --> E --> F --> G --> H --> I
+    E --> F
+    G --> H
+    H --> J
+    
+    style A fill:#e3f2fd
+    style D fill:#f3e5f5
+    style E fill:#f3e5f5
+    style F fill:#e8f5e9
+    style G fill:#e8f5e9
+    style H fill:#e8f5e9
+    style I fill:#ffcdd2
+    style J fill:#ffcdd2

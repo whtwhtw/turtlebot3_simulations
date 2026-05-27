@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    subgraph \"Gazebo \u4eff\u771f\"\n        GW[Gazebo World]\n        GS[\u4f20\u611f\u5668 LDS/IMU]\n    end\n    \n    subgraph \"\u6865\u63a5\u5c42\"\n        GB[ros_gz_bridge]\n    end\n    \n    subgraph \"ROS2 \u8282\u70b9\"\n        ST[slam_toolbox]\n        RSP[robot_state_publisher]\n        TW[teleop_keyboard]\n        RV[rviz2]\n    end\n    \n    subgraph \"\u6838\u5fc3\u8bdd\u9898\"\n        T1[/scan/]\n        T2[/odom/]\n        T3[/cmd_vel/]\n        T4[/tf/]\n        T5[/map/]\n    end\n    \n    GS --> GB\n    GB --> T1\n    GB --> T2\n    GB --> T4\n    T1 --> ST\n    T2 --> ST\n    T4 --> ST\n    TW --> T3\n    T3 --> GB\n    ST --> T4\n    ST --> T5\n    T1 --> RV\n    T5 --> RV\n    \n    style ST fill:#ff5722,color:#fff\n    style GB fill:#e1f5fe\n    style RV fill:#9c27b0,color:#fff\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

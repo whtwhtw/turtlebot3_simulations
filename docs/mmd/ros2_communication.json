@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    subgraph \"ROS2 \u901a\u4fe1\u539f\u8bed\"\n        A[\ud83d\udce1 Topic \u8bdd\u9898] --> |\"\u53d1\u5e03/\u8ba2\u9605<br/>\u5355\u5411\u6d41\"| B[(Publisher)]\n        A --> C[(Subscriber)]\n        \n        D[\ud83d\udd27 Service \u670d\u52a1] --> |\"\u8bf7\u6c42/\u54cd\u5e94<br/>\u53cc\u5411\u540c\u6b65\"| E[Client]\n        D --> F[Server]\n        \n        G[\ud83c\udfac Action \u52a8\u4f5c] --> |\"\u76ee\u6807/\u53cd\u9988/\u7ed3\u679c<br/>\u957f\u65f6\u95f4\u4efb\u52a1\"| H[Client]\n        G --> I[Server]\n        \n        J[\u2699\ufe0f Parameter \u53c2\u6570] --> |\"\u914d\u7f6e\u8bfb\u5199<br/>\u952e\u503c\u5bf9\"| K[Node]\n    end\n    \n    style A fill:#e1f5fe\n    style D fill:#f3e5f5\n    style G fill:#fff3e0\n    style J fill:#e8f5e9\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    A[URDF\u6587\u4ef6] --> RSP\n    B[/joint_states/] --> RSP\n    RSP[robot_state_publisher] --> C[/tf/]\n    RSP --> D[/tf_static/]\n    style A fill:#fff9c4\n    style B fill:#bbdefb\n    style C fill:#c8e6c9\n    style D fill:#c8e6c9\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

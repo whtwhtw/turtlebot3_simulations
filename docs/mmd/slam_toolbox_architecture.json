@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    subgraph \"\u8f93\u5165\"\n        A[/scan + /odom + /tf/]\n    end\n    \n    subgraph \"\u9884\u5904\u7406\"\n        B[\u8fc7\u6ee4]\n        C[\u964d\u91c7\u6837]\n    end\n    \n    subgraph \"\u524d\u7aef\u5339\u914d\"\n        D[ICP \u914d\u51c6]\n        E[Ceres \u4f18\u5316]\n    end\n    \n    subgraph \"\u540e\u7aef\u4f18\u5316\"\n        F[\u4f4d\u59ff\u56fe]\n        G[\u56de\u73af\u68c0\u6d4b]\n        H[\u5168\u5c40\u4f18\u5316]\n    end\n    \n    subgraph \"\u8f93\u51fa\"\n        I[/map/]\n        J[/tf odom\u2192map/]\n    end\n    \n    A --> B --> C --> D --> E --> F --> G --> H --> I\n    E --> F\n    G --> H\n    H --> J\n    \n    style A fill:#e3f2fd\n    style D fill:#f3e5f5\n    style E fill:#f3e5f5\n    style F fill:#e8f5e9\n    style G fill:#e8f5e9\n    style H fill:#e8f5e9\n    style I fill:#ffcdd2\n    style J fill:#ffcdd2\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

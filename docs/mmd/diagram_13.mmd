@@ -1,0 +1,21 @@
+graph LR
+    subgraph 问题轮式里程计有累积误差
+        A[轮子转100圈] --> B[理论上走了 10m]
+        B --> C[实际只走了 9.8m 打滑/轮径误差]
+    end
+
+    subgraph SLAM的修正
+        D[激光雷达匹配] --> E[发现实际位置偏差 0.2m]
+        E --> F[发布 odom map 修正变换]
+    end
+
+    C --> D
+    F --> G[修正后的位姿: 10.0m]
+
+    style A fill:#ffcdd2
+    style B fill:#ffcdd2
+    style C fill:#ffcdd2
+    style D fill:#c8e6c9
+    style E fill:#c8e6c9
+    style F fill:#c8e6c9
+    style G fill:#c8e6c9

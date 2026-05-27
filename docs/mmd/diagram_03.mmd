@@ -1,0 +1,81 @@
+graph TB
+    subgraph Gazebo仿真环境
+        GW[Gazebo World turtlebot3_world.world]
+        GM[Gazebo Model turtlebot3_burger]
+        GS[Gazebo Sensors LDS-01 Laser + IMU + Encoder]
+    end
+
+    subgraph ros_gz_bridge桥接层
+        GB1[Gazebo ROS Scan /scan]
+        GB2[Gazebo ROS Odometry /odom]
+        GB3[Gazebo ROS TF /tf]
+        GB4[Gazebo ROS JointState /joint_states]
+        GB5[ROS Gazebo /cmd_vel Twist]
+    end
+
+    subgraph ROS2节点
+        RSP[robot_state_publisher URDF TF]
+        ST[slam_toolbox 建图核心]
+        TW[teleop_twist_keyboard 键盘控制]
+        RV[rviz2 可视化]
+    end
+
+    subgraph 核心话题
+        T1[/scan sensor_msgs/LaserScan]
+        T2[/odom nav_msgs/Odometry]
+        T3[/cmd_vel geometry_msgs/TwistStamped]
+        T4[/tf & /tf_static tf2_msgs/TFMessage]
+        T5[/map nav_msgs/OccupancyGrid]
+    end
+
+    subgraph 核心服务
+        S1[/slam_toolbox/save_map]
+        S2[/slam_toolbox/serialize_map]
+        S3[/slam_toolbox/dynamic_map]
+        S4[/slam_toolbox/manual_loop_closure]
+    end
+
+    GS --> |激光数据| GB1
+    GS --> |里程计| GB2
+    GS --> |坐标变换| GB3
+    GS --> |关节状态| GB4
+    GM --> |速度指令| GB5
+
+    GB1 --> T1
+    GB2 --> T2
+    GB3 --> T4
+    GB4 --> |关节角度| RSP
+    RSP --> |静态TF| T4
+
+    T1 --> ST
+    T2 --> ST
+    T4 --> ST
+
+    TW --> |键盘WASD| T3
+    T3 --> GB5
+
+    ST --> |位姿估计| T4
+    ST --> |occupancy grid| T5
+
+    T1 --> RV
+    T2 --> RV
+    T4 --> RV
+    T5 --> RV
+
+    ST --> S1
+    ST --> S2
+    ST --> S3
+    ST --> S4
+
+    style GW fill:#fce4ec
+    style GM fill:#fce4ec
+    style GS fill:#fce4ec
+    style GB1 fill:#e1f5fe
+    style GB2 fill:#e1f5fe
+    style GB3 fill:#e1f5fe
+    style GB4 fill:#e1f5fe
+    style GB5 fill:#e1f5fe
+    style ST fill:#ff5722,color:#fff
+    style RSP fill:#4caf50,color:#fff
+    style TW fill:#2196f3,color:#fff
+    style RV fill:#9c27b0,color:#fff

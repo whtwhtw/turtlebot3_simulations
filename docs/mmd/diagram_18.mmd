@@ -1,0 +1,36 @@
+graph TB
+    subgraph 仿真环境
+        A[Gazebo World]
+        B[虚拟 LDS-01]
+        C[虚拟里程计]
+    end
+
+    subgraph 真机环境
+        D[真实房间]
+        E[HLS-LFCD-LDS 激光雷达]
+        F[真实轮式编码器]
+        G[OpenCR 控制器]
+    end
+
+    subgraph 共同部分
+        H[ROS2 节点]
+        I[slam_toolbox]
+        J[话题/服务接口]
+    end
+
+    A -.-> |相同的接口| H
+    B -.-> |相同的消息格式| H
+    C -.-> |相同的坐标系| H
+
+    D --> E --> H
+    D --> F --> G --> H
+    H --> I --> J
+
+    style A fill:#fce4ec
+    style B fill:#fce4ec
+    style C fill:#fce4ec
+    style D fill:#e8f5e9
+    style E fill:#e8f5e9
+    style F fill:#e8f5e9
+    style H fill:#ff5722,color:#fff
+    style I fill:#ff5722,color:#fff

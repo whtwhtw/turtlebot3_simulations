@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    subgraph Gazebo\u7269\u7406\u5f15\u64ce\n        GZ[\u7269\u7406\u4eff\u771f]\n    end\n    subgraph \u4f20\u611f\u5668\u6570\u636e\u6d41\n        GZ --> GB1[ros_gz_bridge]\n        GB1 --> SCAN[/scan/]\n        GB1 --> ODOM[/odom/]\n    end\n    subgraph \u63a7\u5236\u6570\u636e\u6d41\n        KB[teleop_keyboard] --> CMD[/cmd_vel/]\n        CMD --> GB2[ros_gz_bridge]\n        GB2 --> GZ\n    end\n    subgraph SLAM\u5904\u7406\u6d41\n        SCAN --> ST[slam_toolbox]\n        ODOM --> ST\n        TF[/tf/] --> ST\n        ST --> MAP[/map/]\n        ST --> TF\n    end\n    subgraph \u53ef\u89c6\u5316\u6d41\n        MAP --> RV[rviz2]\n        SCAN --> RV\n        ODOM --> RV\n        TF --> RV\n    end\n    style GZ fill:#e3f2fd\n    style ST fill:#ff5722,color:#fff\n    style KB fill:#2196f3,color:#fff\n    style RV fill:#9c27b0,color:#fff\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

@@ -51,8 +51,17 @@
       "Bash(docker compose *)",
       "Bash(wget *)",
       "Bash(ls *)",
-      "Bash(apt-cache *)"
+      "Bash(apt-cache *)",
+      "Bash(git stash)",
+      "Bash(git pull)",
+      "Bash(git stash *)",
+      "Bash(cli-anything-mermaid *)",
+      "Bash(then *)",
+      "Bash(fi)",
+      "Bash(xxd *)",
+      "Bash(cd *)",
+      "Bash(tail *)"
     ]
   },
-  "$version": 3
+  "$version": 4
 }

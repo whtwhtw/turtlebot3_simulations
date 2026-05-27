@@ -1,0 +1,10 @@
+graph LR
+    A[URDF 文件 运动学模型] --> RSP
+    B[/joint_states 关节角度] --> RSP
+    RSP[robot_state_publisher] --> C[/tf base_link base_scan]
+    RSP --> D[/tf_static base_footprint base_link]
+
+    style A fill:#fff9c4
+    style B fill:#bbdefb
+    style C fill:#c8e6c9
+    style D fill:#c8e6c9

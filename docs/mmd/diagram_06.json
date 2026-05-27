@@ -1,0 +1,8 @@
+{
+  "code": "graph LR\n    subgraph Gazebo\u4fa7\n        A[Gazebo Scan \u6570\u636e]\n        B[Gazebo Odometry]\n        C[Gazebo TF]\n    end\n\n    subgraph ros_gz_bridge\n        D[\u6d88\u606f\u683c\u5f0f\u8f6c\u6362 gz.msgs ROS2 msg]\n        E[QoS \u9002\u914d Reliability / Durability]\n        F[\u65f6\u949f\u540c\u6b65 Gazebo Time ROS Time]\n    end\n\n    subgraph ROS2\u4fa7\n        G[/scan LaserScan]\n        H[/odom Odometry]\n        I[/tf TFMessage]\n    end\n\n    A --> D --> G\n    B --> E --> H\n    C --> F --> I\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

@@ -1,0 +1,19 @@
+graph LR
+    subgraph Gazebo侧
+        A[Gazebo Scan数据]
+        B[Gazebo Odometry]
+        C[Gazebo TF]
+    end
+    subgraph 桥接
+        D[消息格式转换]
+        E[QoS适配]
+        F[时钟同步]
+    end
+    subgraph ROS2侧
+        G[/scan/]
+        H[/odom/]
+        I[/tf/]
+    end
+    A --> D --> G
+    B --> E --> H
+    C --> F --> I

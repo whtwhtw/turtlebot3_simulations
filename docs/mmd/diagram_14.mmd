@@ -1,0 +1,11 @@
+graph TB
+    A[新扫描点云 P] --> B[初始位姿估计 T0 来自 odom]
+    B --> C[找到最近点对 Pi Qi]
+    C --> D[计算最优变换 delta T 最小化 Sigma ||Pi - delta T(Qi)||2]
+    D --> E{收敛?}
+    E --> |否| F[更新位姿 Tn+1 = Tn x delta T]
+    F --> C
+    E --> |是| G[输出最终位姿]
+
+    style A fill:#e3f2fd
+    style G fill:#c8e6c9

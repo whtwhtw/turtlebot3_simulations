@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    subgraph \u4eff\u771f\u73af\u5883\n        A[Gazebo World]\n        B[\u865a\u62df LDS-01]\n        C[\u865a\u62df\u91cc\u7a0b\u8ba1]\n    end\n\n    subgraph \u771f\u673a\u73af\u5883\n        D[\u771f\u5b9e\u623f\u95f4]\n        E[HLS-LFCD-LDS \u6fc0\u5149\u96f7\u8fbe]\n        F[\u771f\u5b9e\u8f6e\u5f0f\u7f16\u7801\u5668]\n        G[OpenCR \u63a7\u5236\u5668]\n    end\n\n    subgraph \u5171\u540c\u90e8\u5206\n        H[ROS2 \u8282\u70b9]\n        I[slam_toolbox]\n        J[\u8bdd\u9898/\u670d\u52a1\u63a5\u53e3]\n    end\n\n    A -.-> |\u76f8\u540c\u7684\u63a5\u53e3| H\n    B -.-> |\u76f8\u540c\u7684\u6d88\u606f\u683c\u5f0f| H\n    C -.-> |\u76f8\u540c\u7684\u5750\u6807\u7cfb| H\n\n    D --> E --> H\n    D --> F --> G --> H\n    H --> I --> J\n\n    style A fill:#fce4ec\n    style B fill:#fce4ec\n    style C fill:#fce4ec\n    style D fill:#e8f5e9\n    style E fill:#e8f5e9\n    style F fill:#e8f5e9\n    style H fill:#ff5722,color:#fff\n    style I fill:#ff5722,color:#fff\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

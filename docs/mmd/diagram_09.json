@@ -1,0 +1,8 @@
+{
+  "code": "graph TB\n    subgraph Gazebo\u7269\u7406\u5f15\u64ce\n        GZ[\u7269\u7406\u4eff\u771f]\n    end\n\n    subgraph \u4f20\u611f\u5668\u6570\u636e\u6d41\n        GZ --> |LDS-01 \u6fc0\u5149| GB1[ros_gz_bridge]\n        GZ --> |\u8f6e\u5f0f\u7f16\u7801\u5668| GB2[ros_gz_bridge]\n        GZ --> |IMU| GB3[ros_gz_bridge]\n\n        GB1 --> |sensor_msgs/LaserScan| SCAN[/scan/]\n        GB2 --> |nav_msgs/Odometry| ODOM[/odom/]\n        GB3 --> |sensor_msgs/Imu| IMU[/imu/]\n    end\n\n    subgraph \u63a7\u5236\u6570\u636e\u6d41\n        KB[teleop_twist_keyboard] --> |WASD \u6309\u952e| CMD[/cmd_vel/]\n        CMD --> |TwistStamped| GB4[ros_gz_bridge]\n        GB4 --> |\u901f\u5ea6\u6307\u4ee4| GZ\n    end\n\n    subgraph SLAM\u5904\u7406\u6d41\n        SCAN --> ST[slam_toolbox]\n        ODOM --> ST\n        TF[/tf/] --> ST\n\n        ST --> |Scan Matching| POSE[\u4f4d\u59ff\u4f30\u8ba1]\n        ST --> |Loop Closure| LC[\u56de\u73af\u68c0\u6d4b]\n        ST --> |Graph Optimization| OPT[\u5168\u5c40\u4f18\u5316]\n\n        OPT --> |nav_msgs/OccupancyGrid| MAP[/map/]\n        OPT --> |tf2_msgs/TFMessage odom map| TF\n    end\n\n    subgraph \u53ef\u89c6\u5316\u6d41\n        MAP --> RV[rviz2]\n        SCAN --> RV\n        ODOM --> RV\n        TF --> RV\n    end\n\n    style GZ fill:#e3f2fd\n    style ST fill:#ff5722,color:#fff\n    style KB fill:#2196f3,color:#fff\n    style RV fill:#9c27b0,color:#fff\n    style SCAN fill:#ffe0b2\n    style ODOM fill:#ffe0b2\n    style MAP fill:#ffcdd2\n",
+  "mermaid": "{\n  \"theme\": \"default\"\n}",
+  "updateDiagram": true,
+  "rough": false,
+  "panZoom": true,
+  "grid": true
+}

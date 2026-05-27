@@ -1,0 +1,48 @@
+flowchart TB
+    subgraph "🎮 Gazebo 物理引擎"
+        GZ[物理仿真]
+    end
+    
+    subgraph "📡 传感器数据流"
+        GZ --> |"LDS-01 激光"| GB1[ros_gz_bridge]
+        GZ --> |"轮式编码器"| GB2[ros_gz_bridge]
+        GZ --> |"IMU"| GB3[ros_gz_bridge]
+        
+        GB1 --> |"sensor_msgs/LaserScan"| SCAN[/scan/]
+        GB2 --> |"nav_msgs/Odometry"| ODOM[/odom/]
+        GB3 --> |"sensor_msgs/Imu"| IMU[/imu/]
+    end
+    
+    subgraph "⌨️ 控制数据流"
+        KB[teleop_twist_keyboard] --> |"WASD 按键"| CMD[/cmd_vel/]
+        CMD --> |"TwistStamped"| GB4[ros_gz_bridge]
+        GB4 --> |"速度指令"| GZ
+    end
+    
+    subgraph "🧠 SLAM 处理流"
+        SCAN --> ST[slam_toolbox]
+        ODOM --> ST
+        TF[/tf/] --> ST
+        
+        ST --> |"Scan Matching"| POSE[位姿估计]
+        ST --> |"Loop Closure"| LC[回环检测]
+        ST --> |"Graph Optimization"| OPT[全局优化]
+        
+        OPT --> |"nav_msgs/OccupancyGrid"| MAP[/map/]
+        OPT --> |"tf2_msgs/TFMessage<br/>odom→map"| TF
+    end
+    
+    subgraph "📺 可视化流"
+        MAP --> RV[rviz2]
+        SCAN --> RV
+        ODOM --> RV
+        TF --> RV
+    end
+    
+    style GZ fill:#e3f2fd
+    style ST fill:#ff5722,color:#fff
+    style KB fill:#2196f3,color:#fff
+    style RV fill:#9c27b0,color:#fff
+    style SCAN fill:#ffe0b2
+    style ODOM fill:#ffe0b2
+    style MAP fill:#ffcdd2
